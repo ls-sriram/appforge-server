@@ -161,7 +161,10 @@ private suspend fun resolvePublicEntity(
         else -> null
     }
 
-    val content = contentResolver.resolveText(ownerId, category, entityId, null)
+    val content = runCatching {
+        contentResolver.resolveText(ownerId, category, entityId, null)
+    }.getOrNull()?.takeIf { it.isNotBlank() }
+        ?: (doc?.get("content") as? String)?.takeIf { it.isNotBlank() }
 
     val title = doc?.get("title") as? String ?: doc?.get("name") as? String ?: "Entity"
     val subtitle = doc?.get("subtitle") as? String
@@ -182,7 +185,7 @@ private suspend fun resolvePublicEntity(
         category = category.value,
         title = title,
         subtitle = subtitle,
-        content = content.takeIf { it.isNotBlank() },
+        content = content,
         question = doc?.get("question") as? String,
         assetUrl = assetUrl
     )

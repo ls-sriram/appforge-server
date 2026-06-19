@@ -5,6 +5,7 @@ import com.appforge.server.api.sharing.ShareResponse
 import com.appforge.server.api.sharing.ShareSummaryResponse
 import com.appforge.server.infrastructure.time.instantToProtoTimestamp
 import com.appforge.server.services.reviews.models.Review
+import com.appforge.server.services.reviews.models.toJsonElement
 import com.appforge.server.services.sharing.models.Share
 
 object ApiConverters {
@@ -17,7 +18,7 @@ object ApiConverters {
             authorId = review.authorId,
             authorName = review.authorName,
             authorEmail = review.authorEmail,
-            content = review.content.filterValues { it != null }.mapValues { it.value.toString() },
+            content = review.content.mapValues { (_, value) -> value.toJsonElement() },
             createdAtTimestamp = review.createdAt.toEpochMilli()
         )
 

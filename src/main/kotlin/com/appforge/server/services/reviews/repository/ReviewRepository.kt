@@ -9,17 +9,14 @@ import com.appforge.server.providers.transaction.TransactionProvider
 import com.appforge.server.services.reviews.models.EntityCategory
 import com.appforge.server.services.reviews.models.Review
 import com.appforge.server.services.reviews.models.ReviewAuthorRole
+import com.appforge.server.services.reviews.models.toJsonObject
+import com.appforge.server.services.reviews.models.toReviewContentMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import com.appforge.server.infrastructure.time.*
 
 interface ReviewRepositoryApi {
@@ -47,11 +44,7 @@ class ReviewRepository(
         try {
             val contentJson = json.encodeToString(
                 JsonObject.serializer(),
-                buildJsonObject {
-                    review.content.forEach { (key, value) ->
-                        put(key, value?.toString()?.let(::JsonPrimitive) ?: JsonNull)
-                    }
-                }
+                review.content.toJsonObject()
             )
             transactionProvider.write { conn ->
                 conn.prepareStatement(
@@ -151,8 +144,6 @@ class ReviewRepository(
 
     private fun parseContent(rawContent: String): Map<String, Any?> {
         if (rawContent.isBlank()) return emptyMap()
-        return json.parseToJsonElement(rawContent).jsonObject.mapValues { (_, value) ->
-            value.jsonPrimitive.contentOrNull ?: value.toString()
-        }
+        return json.parseToJsonElement(rawContent).jsonObject.toReviewContentMap()
     }
 }

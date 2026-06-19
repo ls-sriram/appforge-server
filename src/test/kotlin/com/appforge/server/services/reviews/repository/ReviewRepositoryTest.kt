@@ -11,6 +11,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class ReviewRepositoryTest {
@@ -121,5 +122,41 @@ class ReviewRepositoryTest {
         assertEquals(2, result.data.size)
         assertEquals(older.createdAt, result.data[0].createdAt)
         assertEquals(newer.createdAt, result.data[1].createdAt)
+    }
+
+    @Test
+    fun `review content preserves structured values`() = kotlinx.coroutines.runBlocking {
+        val (repo, db) = createRepository()
+        val userId = "u_${System.nanoTime()}"
+        seedUser(db, userId, "$userId@example.com")
+
+        val review = Review(
+            id = "r_${System.nanoTime()}",
+            entityId = "e_structured",
+            entityCategory = EntityCategory("document"),
+            authorRole = ReviewAuthorRole.EXTERNAL,
+            authorId = null,
+            authorName = "Reviewer",
+            authorEmail = null,
+            content = mapOf(
+                "score" to 5,
+                "tags" to listOf("clear", "strong"),
+                "section" to mapOf("name" to "intro", "passed" to true),
+                "notes" to null,
+            ),
+            createdAt = Instant.parse("2024-01-03T00:00:00Z"),
+        )
+
+        repo.create(userId, "document", "e_structured", review)
+
+        val result = repo.getReviewsForEntity(userId, "document", "e_structured")
+        assertTrue(result is Resource.Success)
+        val loaded = result.data.single()
+        assertEquals(5L, loaded.content["score"])
+        assertEquals(listOf("clear", "strong"), loaded.content["tags"])
+        val section = assertIs<Map<*, *>>(loaded.content["section"])
+        assertEquals("intro", section["name"])
+        assertEquals(true, section["passed"])
+        assertEquals(null, loaded.content["notes"])
     }
 }

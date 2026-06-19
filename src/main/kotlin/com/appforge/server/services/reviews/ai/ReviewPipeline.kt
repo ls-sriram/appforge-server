@@ -22,7 +22,9 @@ class TextDocumentPipeline(
 ) : ReviewPipeline {
     override suspend fun generateReview(userId: String, entityId: String, versionId: String?): Map<String, Any?> {
         val content = contentResolver.resolveText(userId, category, entityId, versionId)
-        if (content.isBlank()) return mapOf("error" to "No content found for entity $entityId")
+        if (content.isBlank()) {
+            throw IllegalStateException("No content found for entity $entityId")
+        }
 
         val jsonResponse = openAIService.reviewDocument(content, category.value)
         return try {
@@ -38,14 +40,12 @@ class TextDocumentPipeline(
  */
 class AudioRecordingPipeline(
     private val openAIService: OpenAIService,
-    private val contentResolver: ReviewContentResolver
+    private val contentResolver: ReviewContentResolver,
+    private val category: EntityCategory,
 ) : ReviewPipeline {
     override suspend fun generateReview(userId: String, entityId: String, versionId: String?): Map<String, Any?> {
-        val bytes = contentResolver.resolveBytes(userId, EntityCategory(""), entityId)
-        if (bytes == null) return mapOf("error" to "Could not fetch asset bytes for $entityId")
-
-        val transcript = contentResolver.resolveTranscript(userId, EntityCategory(""), entityId)
-            ?: "Transcript unavailable for $entityId"
+        val transcript = contentResolver.resolveTranscript(userId, category, entityId)
+            ?: throw IllegalStateException("Transcript unavailable for $entityId")
 
         val jsonResponse = openAIService.reviewRecording(transcript)
         return try {
@@ -61,11 +61,12 @@ class AudioRecordingPipeline(
  */
 class ImageReviewPipeline(
     private val openAIService: OpenAIService,
-    private val contentResolver: ReviewContentResolver
+    private val contentResolver: ReviewContentResolver,
+    private val category: EntityCategory,
 ) : ReviewPipeline {
     override suspend fun generateReview(userId: String, entityId: String, versionId: String?): Map<String, Any?> {
-        val bytes = contentResolver.resolveBytes(userId, EntityCategory(""), entityId)
-        if (bytes == null) return mapOf("error" to "Could not fetch image bytes for $entityId")
+        val bytes = contentResolver.resolveBytes(userId, category, entityId)
+            ?: throw IllegalStateException("Could not fetch image bytes for $entityId")
 
         val jsonResponse = openAIService.reviewImage(bytes, "Review this image.")
         return try {
@@ -108,8 +109,8 @@ class ReviewPipelineFactory(
     fun getPipeline(category: EntityCategory): ReviewPipeline {
         return when (category.value.lowercase()) {
             "document", "text" -> TextDocumentPipeline(openAIService, contentResolver, category)
-            "audio", "recording" -> AudioRecordingPipeline(openAIService, contentResolver)
-            "image", "photo" -> ImageReviewPipeline(openAIService, contentResolver)
+            "audio", "recording" -> AudioRecordingPipeline(openAIService, contentResolver, category)
+            "image", "photo" -> ImageReviewPipeline(openAIService, contentResolver, category)
             else -> TextDocumentPipeline(openAIService, contentResolver, category)
         }
     }

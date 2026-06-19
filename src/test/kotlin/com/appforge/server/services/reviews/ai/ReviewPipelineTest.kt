@@ -5,6 +5,7 @@ import com.appforge.server.services.reviews.models.EntityCategory
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
 
 class ReviewPipelineTest {
@@ -48,15 +49,13 @@ class ReviewPipelineTest {
 
     @Test
     fun `AudioRecordingPipeline resolves bytes and transcript then calls reviewRecording`() = runBlocking {
-        val pipeline = AudioRecordingPipeline(openAIService, contentResolver)
+        val pipeline = AudioRecordingPipeline(openAIService, contentResolver, EntityCategory("recording"))
         val userId = "u2"
         val entityId = "e2"
-        val bytes = "audio data".toByteArray()
         val transcript = "Optimized transcript"
         val jsonResponse = "{\"overallScore\": 88}"
 
-        coEvery { contentResolver.resolveBytes(userId, EntityCategory(""), entityId) } returns bytes
-        coEvery { contentResolver.resolveTranscript(userId, EntityCategory(""), entityId) } returns transcript
+        coEvery { contentResolver.resolveTranscript(userId, EntityCategory("recording"), entityId) } returns transcript
         coEvery { openAIService.reviewRecording(transcript) } returns jsonResponse
 
         val result = pipeline.generateReview(userId, entityId)
@@ -66,13 +65,13 @@ class ReviewPipelineTest {
 
     @Test
     fun `ImageReviewPipeline resolves bytes and calls reviewImage`() = runBlocking {
-        val pipeline = ImageReviewPipeline(openAIService, contentResolver)
+        val pipeline = ImageReviewPipeline(openAIService, contentResolver, EntityCategory("image"))
         val userId = "u3"
         val entityId = "e3"
         val bytes = "image data".toByteArray()
         val jsonResponse = "{\"score\": 75}"
 
-        coEvery { contentResolver.resolveBytes(userId, EntityCategory(""), entityId) } returns bytes
+        coEvery { contentResolver.resolveBytes(userId, EntityCategory("image"), entityId) } returns bytes
         coEvery { openAIService.reviewImage(bytes, any()) } returns jsonResponse
 
         val result = pipeline.generateReview(userId, entityId)
@@ -81,16 +80,17 @@ class ReviewPipelineTest {
     }
 
     @Test
-    fun `TextDocumentPipeline handles missing content gracefully`() = runBlocking {
+    fun `TextDocumentPipeline fails when content is missing`() {
         val pipeline = TextDocumentPipeline(openAIService, contentResolver, EntityCategory("document"))
         val userId = "u1"
         val entityId = "e1"
 
         coEvery { contentResolver.resolveText(userId, EntityCategory("document"), entityId) } returns ""
 
-        val result = pipeline.generateReview(userId, entityId)
-
-        assertEquals("No content found for entity e1", result["error"])
+        val error = assertThrows<IllegalStateException> {
+            runBlocking { pipeline.generateReview(userId, entityId) }
+        }
+        assertEquals("No content found for entity e1", error.message)
     }
 
     @Test
@@ -108,6 +108,20 @@ class ReviewPipelineTest {
 
         assertEquals(invalidJson, result["raw_feedback"])
         assertTrue { result.containsKey("parse_error") }
+    }
+
+    @Test
+    fun `AudioRecordingPipeline fails when transcript is unavailable`() {
+        val pipeline = AudioRecordingPipeline(openAIService, contentResolver, EntityCategory("recording"))
+        val userId = "u2"
+        val entityId = "e2"
+
+        coEvery { contentResolver.resolveTranscript(userId, EntityCategory("recording"), entityId) } returns null
+
+        val error = assertThrows<IllegalStateException> {
+            runBlocking { pipeline.generateReview(userId, entityId) }
+        }
+        assertEquals("Transcript unavailable for e2", error.message)
     }
     
     private fun assertTrue(block: () -> Boolean) {

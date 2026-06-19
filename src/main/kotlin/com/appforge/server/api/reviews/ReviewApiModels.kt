@@ -1,6 +1,7 @@
 package com.appforge.server.api.reviews
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class ReviewResponse(
@@ -9,7 +10,7 @@ data class ReviewResponse(
     val authorId: String?,
     val authorName: String?,
     val authorEmail: String?,
-    val content: Map<String, String>,
+    val content: Map<String, JsonElement>,
     val createdAtTimestamp: Long // epoch millis
 )
 

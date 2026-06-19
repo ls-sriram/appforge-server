@@ -21,8 +21,9 @@ class ReviewContentResolver(
     /**
      * Resolves raw bytes for an asset from GCS by assetId.
      */
-    suspend fun resolveBytes(_userId: String, _category: EntityCategory, entityId: String): ByteArray? {
+    suspend fun resolveBytes(userId: String, _category: EntityCategory, entityId: String): ByteArray? {
         val record = uploadMetadataRepository.getByAssetId(entityId) ?: return null
+        if (record.uid != userId) return null
 
         return withContext(Dispatchers.IO) {
             try {

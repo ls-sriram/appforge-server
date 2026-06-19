@@ -48,4 +48,23 @@ class AIReviewWorkerTest {
             )
         }
     }
+
+    @Test
+    fun `enqueueAIReview does not persist review when pipeline fails`() = runBlocking {
+        val reviewRepo = mockk<ReviewRepositoryApi>(relaxed = true)
+        val pipelineFactory = mockk<ReviewPipelineFactory>()
+        val pipeline = mockk<ReviewPipeline>()
+        val worker = AIReviewWorker(reviewRepo, pipelineFactory, Dispatchers.Unconfined)
+
+        val entityId = "e123"
+        val userId = "u456"
+        val category = EntityCategory("recording")
+
+        every { pipelineFactory.getPipeline(category) } returns pipeline
+        coEvery { pipeline.generateReview(userId, entityId) } throws IllegalStateException("Transcript unavailable")
+
+        worker.enqueueAIReview(userId, category, entityId)
+
+        coVerify(exactly = 0) { reviewRepo.create(any(), any(), any(), any()) }
+    }
 }

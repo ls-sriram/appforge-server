@@ -31,6 +31,15 @@ class ShareUseCasesImpl(
         entityId: String,
         request: CreateShareRequest
     ): ShareResponse {
+        if (request.entityType.isNotBlank() && request.entityType != type) {
+            throw IllegalArgumentException("Entity type mismatch.")
+        }
+        if (!request.entityPath.isNullOrBlank()) {
+            val normalizedPath = request.entityPath.lowercase()
+            if (!normalizedPath.contains(type.lowercase()) || !normalizedPath.contains(entityId.lowercase())) {
+                throw IllegalArgumentException("Entity path mismatch.")
+            }
+        }
         val category = EntityCategory(type)
         return when (val res = shareService.createShare(
             ownerId = userId,

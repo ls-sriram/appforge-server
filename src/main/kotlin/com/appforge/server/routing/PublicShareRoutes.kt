@@ -53,7 +53,7 @@ fun Route.publicShareRoutes(services: PublicShareServices) {
             )
         }
 
-        // Compatibility alias for generic clients that don't hardcode entity-specific URLs.
+        // Compatibility alias for recording clients that use the generic `/content` suffix.
         get("/content") {
             val token = call.parameters["token"]
             if (token.isNullOrBlank()) {

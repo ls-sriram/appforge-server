@@ -36,6 +36,7 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.AfterEach
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -182,7 +183,7 @@ class PublicShareRoutesTest {
             authorId = null,
             authorName = "Reviewer",
             authorEmail = null,
-            content = mapOf("text" to "hello"),
+            content = mapOf("text" to JsonPrimitive("hello")),
             createdAtTimestamp = 1_700_000_000_000L,
         )
 

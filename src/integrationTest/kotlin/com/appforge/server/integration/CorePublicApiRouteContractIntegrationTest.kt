@@ -98,6 +98,7 @@ import io.mockk.mockk
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.JsonPrimitive
 
 class CorePublicApiRouteContractIntegrationTest {
     @Test
@@ -266,7 +267,7 @@ class CorePublicApiRouteContractIntegrationTest {
             authorId = null,
             authorName = "Reviewer",
             authorEmail = null,
-            content = mapOf("score" to "5"),
+            content = mapOf("score" to JsonPrimitive("5")),
             createdAtTimestamp = 123L,
         )
         coEvery { publicShareUseCases.getSharedRecordingContent(any()) } returns RecordingContent(
