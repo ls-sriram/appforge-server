@@ -1,8 +1,8 @@
-# AGENTS.md for server/src/main/kotlin/com.appforge/server/
+# AGENTS.md for src/main/kotlin/com/appforge/server/
 
 ## Scope
 
-- Applies to `server/src/main/kotlin/com.appforge/server/**`.
+- Applies to `src/main/kotlin/com/appforge/server/**`.
 
 ## Must Follow
 
@@ -25,10 +25,10 @@
 
 ## Key References
 
-- `server/AGENTS.md`
-- `docs/architecture/providers.md`
-- `docs/architecture/dependency-rules.md`
-- `server/docs/`
+- `AGENTS.md`
+- `docs/architecture.md`
+- `docs/testing/api-integration-coverage.md`
+- `api/README.md`
 
 ## Out of Scope
 

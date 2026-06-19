@@ -2,6 +2,9 @@
   "name": "backend-server",
   "private": true,
   "scripts": {
+    "api:proto:lint": "node scripts/check-proto-contracts.js",
+    "api:proto:gen": "./gradlew generateProto",
+    "api:proto:check": "npm run api:proto:lint && npm run api:proto:gen",
     "local": "./scripts/run-local-sql.sh --app-only",
     "local:app": "./scripts/run-local-sql.sh --app-only",
     "local:db": "./scripts/run-local-sql.sh --db-only",

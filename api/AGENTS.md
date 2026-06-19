@@ -27,9 +27,9 @@ From repo root:
 ## Key References
 
 - `api/README.md`
-- `docs/architecture/invariants.md`
-- `docs/runbooks/ast-search.md`
-- `docs/decisions/`
+- `docs/architecture.md`
+- `docs/index.md`
+- `build.gradle.kts`
 
 ## Out of Scope
 

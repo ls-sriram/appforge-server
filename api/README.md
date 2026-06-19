@@ -18,9 +18,9 @@ This folder is the single source of truth for API contracts shared by:
 
 ## Commands (from repo root)
 
-- `npm run api:proto:lint` — lint proto contracts
-- `npm run api:proto:gen` — generate TS/Kotlin types + route manifest
-- `npm run api:proto:check` — lint + generate
+- `npm run api:proto:lint` — run repo-local proto guardrails
+- `npm run api:proto:gen` — generate Kotlin protobuf sources
+- `npm run api:proto:check` — run proto guardrails + generation
 
 ## Current Scope
 
