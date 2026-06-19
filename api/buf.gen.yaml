@@ -1,0 +1,13 @@
+version: v2
+plugins:
+  - remote: buf.build/protocolbuffers/kotlin:v29.3
+    out: server/src/generated/proto
+  - remote: buf.build/community/stephenh-ts-proto:v2.11.7
+    out: src/generated/proto
+    opt:
+      - esModuleInterop=true
+      - env=browser
+      - outputServices=generic-definitions
+      - useExactTypes=false
+      - stringEnums=true
+      - useDate=false

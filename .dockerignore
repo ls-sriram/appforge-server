@@ -1,0 +1,15 @@
+# Exclude build artifacts
+build
+.gradle
+bin
+out
+
+# Exclude secrets
+.env
+.env.*
+
+# Exclude IDE and System files
+.idea
+.vscode
+.DS_Store
+*.log

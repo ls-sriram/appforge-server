@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package auth.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "common/v1/user.proto";
+
+service AuthService {
+  rpc SessionLogin(SessionLoginRequest) returns (SessionLoginResponse) {
+    option (google.api.http) = {
+      post: "/session/login"
+      body: "*"
+    };
+  }
+
+  rpc SessionLogout(SessionLogoutRequest) returns (SessionLogoutResponse) {
+    option (google.api.http) = {
+      post: "/session/logout"
+      body: "*"
+    };
+  }
+
+  rpc SessionMe(SessionMeRequest) returns (SessionMeResponse) {
+    option (google.api.http) = {
+      get: "/session/me"
+    };
+  }
+
+}
+
+message SessionLoginRequest {
+  string id_token = 1;
+}
+
+message SessionLoginResponse {
+  bool success = 1;
+  string uid = 2;
+}
+
+message SessionLogoutRequest {}
+
+message SessionLogoutResponse {
+  bool success = 1;
+  string uid = 2;
+}
+
+message SessionMeRequest {}
+
+message SessionMeResponse {
+  common.v1.UserIdentity identity = 1;
+}

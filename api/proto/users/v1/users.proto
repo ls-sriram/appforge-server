@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package users.v1;
+
+import "google/api/annotations.proto";
+import "common/v1/user.proto";
+
+service UsersService {
+  rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse) {
+    option (google.api.http) = {
+      get: "/users/me"
+    };
+  }
+
+  rpc UpdateUserProfile(UpdateUserProfileRequest) returns (UpdateUserProfileResponse) {
+    option (google.api.http) = {
+      put: "/users/me"
+      body: "*"
+    };
+  }
+}
+
+message GetUserProfileRequest {}
+
+message GetUserProfileResponse {
+  common.v1.UserIdentity identity = 1;
+  common.v1.UserPlan plan = 2;
+  common.v1.UserUsage usage = 3;
+}
+
+message UpdateUserProfileRequest {
+  string name = 1;
+}
+
+message UpdateUserProfileResponse {
+  bool success = 1;
+}

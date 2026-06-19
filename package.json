@@ -1,0 +1,13 @@
+{
+  "name": "backend-server",
+  "private": true,
+  "scripts": {
+    "local": "./scripts/run-local-sql.sh --app-only",
+    "local:app": "./scripts/run-local-sql.sh --app-only",
+    "local:db": "./scripts/run-local-sql.sh --db-only",
+    "local:all": "./scripts/run-local-sql.sh"
+  },
+  "dependencies": {
+    "headroom-ai": "^0.22.4"
+  }
+}

@@ -1,0 +1,21 @@
+build/
+.gradle/
+out/
+.kotlin/
+.idea/
+*.iml
+bin/
+build_output.log
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.crash.log
+
+# Local env (should never be committed)
+.env.local
+.secrets.conf
+secrets/*.env
+secrets/*.local
+secrets/*.json

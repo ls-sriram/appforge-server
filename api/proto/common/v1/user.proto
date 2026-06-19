@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package common.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message UserIdentity {
+  string uid = 1;
+  string email = 2;
+  string name = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp last_login_at = 5;
+}
+
+message UsageFeature {
+  int64 used = 1;
+  int64 limit = 2;
+  bool unlocked = 3;
+}
+
+message UserPlan {
+  string name = 1;
+  string status = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  google.protobuf.Timestamp started_at = 4;
+  string source = 5;
+  bool cancel_at_period_end = 6;
+  string checkout_url = 7;
+}
+
+message UserUsage {
+  UsageFeature review_submissions = 1;
+  UsageFeature entity_creations = 2;
+  UsageFeature api_requests = 3;
+  UsageFeature shared_links = 4;
+  UsageFeature storage_bytes = 5;
+}

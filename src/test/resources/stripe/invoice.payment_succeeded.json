@@ -1,0 +1,188 @@
+{
+  "id": "evt_1Sh8yCIOoml4nMLJBaW1m1uK",
+  "object": "event",
+  "api_version": "2025-03-31.basil",
+  "created": 1766409374,
+  "data": {
+    "object": {
+      "id": "in_1Sh8y7IOoml4nMLJCHdWGRt3",
+      "object": "invoice",
+      "account_country": "US",
+      "account_name": "Astra",
+      "account_tax_ids": null,
+      "amount_due": 12900,
+      "amount_overpaid": 0,
+      "amount_paid": 12900,
+      "amount_remaining": 0,
+      "amount_shipping": 0,
+      "application": null,
+      "attempt_count": 1,
+      "attempted": true,
+      "auto_advance": false,
+      "automatic_tax": {
+        "disabled_reason": null,
+        "enabled": false,
+        "liability": null,
+        "provider": null,
+        "status": null
+      },
+      "automatically_finalizes_at": null,
+      "billing_reason": "subscription_create",
+      "collection_method": "charge_automatically",
+      "created": 1766409371,
+      "currency": "usd",
+      "custom_fields": null,
+      "customer": "cus_TeRrXMyP1Nm38M",
+      "customer_account": null,
+      "customer_address": {
+        "city": "Chennai",
+        "country": "IN",
+        "line1": "Mylapore",
+        "line2": null,
+        "postal_code": "600004",
+        "state": "TN"
+      },
+      "customer_email": "ls_ram@hotmail.com",
+      "customer_name": "John Doe",
+      "customer_phone": null,
+      "customer_shipping": null,
+      "customer_tax_exempt": "none",
+      "customer_tax_ids": [],
+      "default_payment_method": null,
+      "default_source": null,
+      "default_tax_rates": [],
+      "description": null,
+      "discounts": [],
+      "due_date": null,
+      "effective_at": 1766409371,
+      "ending_balance": 0,
+      "footer": null,
+      "from_invoice": null,
+      "hosted_invoice_url": "https://invoice.stripe.com/i/acct_1RHIsVIOoml4nMLJ/test_YWNjdF8xUkhJc1ZJT29tbDRuTUxKLF9UZVJyaUpScldvSWR1TUpRZ0U0SFRacmJMdTA5OHdpLDE1Njk1MDE3Ng0200rzoIAaIH?s=ap",
+      "invoice_pdf": "https://pay.stripe.com/invoice/acct_1RHIsVIOoml4nMLJ/test_YWNjdF8xUkhJc1ZJT29tbDRuTUxKLF9UZVJyaUpScldvSWR1TUpRZ0U0SFRacmJMdTA5OHdpLDE1Njk1MDE3Ng0200rzoIAaIH/pdf?s=ap",
+      "issuer": {
+        "type": "self"
+      },
+      "last_finalization_error": null,
+      "latest_revision": null,
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_1Sh8y7IOoml4nMLJV4YzH8QG",
+            "object": "line_item",
+            "amount": 12900,
+            "currency": "usd",
+            "description": "1 × Premium (at $129.00 / every 6 months)",
+            "discount_amounts": [],
+            "discountable": true,
+            "discounts": [],
+            "invoice": "in_1Sh8y7IOoml4nMLJCHdWGRt3",
+            "livemode": false,
+            "metadata": {
+              "priceId": "price_1Sh4GdIOoml4nMLJxahhgsJG",
+              "userId": "DTu2KQct6rhupr8q6u7WdF814Bo2"
+            },
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_1Sh8y7IOoml4nMLJCzU7b66B",
+                "subscription_item": "si_TeRr5x39aoXd7X"
+              },
+              "type": "subscription_item_details"
+            },
+            "period": {
+              "end": 1782134171,
+              "start": 1766409371
+            },
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "price_1Sh4GdIOoml4nMLJxahhgsJG",
+                "product": "prod_TeMyFV0joXA8Eb"
+              },
+              "type": "price_details",
+              "unit_amount_decimal": "12900"
+            },
+            "quantity": 1,
+            "subtotal": 12900,
+            "taxes": []
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/invoices/in_1Sh8y7IOoml4nMLJCHdWGRt3/lines"
+      },
+      "livemode": false,
+      "metadata": {},
+      "next_payment_attempt": null,
+      "number": "HWJFQSSX-0001",
+      "on_behalf_of": null,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {
+            "priceId": "price_1Sh4GdIOoml4nMLJxahhgsJG",
+            "userId": "DTu2KQct6rhupr8q6u7WdF814Bo2"
+          },
+          "subscription": "sub_1Sh8y7IOoml4nMLJCzU7b66B"
+        },
+        "type": "subscription_details"
+      },
+      "payment_settings": {
+        "default_mandate": null,
+        "payment_method_options": {
+          "acss_debit": null,
+          "bancontact": null,
+          "card": {
+            "request_three_d_secure": "automatic"
+          },
+          "customer_balance": null,
+          "konbini": null,
+          "payto": null,
+          "sepa_debit": null,
+          "us_bank_account": null
+        },
+        "payment_method_types": null
+      },
+      "period_end": 1766409371,
+      "period_start": 1766409371,
+      "post_payment_credit_notes_amount": 0,
+      "pre_payment_credit_notes_amount": 0,
+      "receipt_number": null,
+      "rendering": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "starting_balance": 0,
+      "statement_descriptor": null,
+      "status": "paid",
+      "status_transitions": {
+        "finalized_at": 1766409371,
+        "marked_uncollectible_at": null,
+        "paid_at": 1766409374,
+        "voided_at": null
+      },
+      "subtotal": 12900,
+      "subtotal_excluding_tax": 12900,
+      "test_clock": null,
+      "total": 12900,
+      "total_discount_amounts": [],
+      "total_excluding_tax": 12900,
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [],
+      "webhooks_delivered_at": null
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 2,
+  "request": {
+    "id": null,
+    "idempotency_key": "8f11c567-2133-4c89-baf9-139df3c79a57"
+  },
+  "type": "invoice.payment_succeeded"
+}
