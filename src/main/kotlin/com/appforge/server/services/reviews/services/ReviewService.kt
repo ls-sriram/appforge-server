@@ -45,6 +45,7 @@ class ReviewService(
         entityCategory: EntityCategory,
         entityId: String,
         displayName: String,
+        authorEmail: String? = null,
         content: Map<String, Any?>
     ): Resource<Review> {
         val reviewId = IdentifierProvider.newUuid()
@@ -55,7 +56,7 @@ class ReviewService(
             authorRole = ReviewAuthorRole.EXTERNAL,
             authorId = null,
             authorName = displayName,
-            authorEmail = null,
+            authorEmail = authorEmail,
             content = content,
             createdAt = clock.nowTimestamp()
         )

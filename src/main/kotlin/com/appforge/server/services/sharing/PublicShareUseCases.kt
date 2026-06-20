@@ -45,10 +45,11 @@ class PublicShareUseCasesImpl(
         when (shareRes) {
             is Resource.Success -> {
                 val share = shareRes.data
-                val entity = resolvePublicEntity(
+                val entity = resolveSharedEntity(
                     contentResolver = contentResolver,
                     ownerId = share.ownerId,
-                    share = share,
+                    entityCategory = share.entityCategory.value,
+                    entityId = share.entityId,
                     shareEntityRepository = shareEntityRepository,
                     uploadMetadataRepository = uploadMetadataRepository,
                     signedGetUrlIssuer = signedGetUrlIssuer,
@@ -140,74 +141,5 @@ class PublicShareUseCasesImpl(
         return ReviewTemplateResponse(
             reviewForm = reviewForm,
         )
-    }
-}
-
-private suspend fun resolvePublicEntity(
-    contentResolver: ReviewContentResolver,
-    ownerId: String,
-    share: com.appforge.server.services.sharing.models.Share,
-    shareEntityRepository: ShareEntityRepositoryApi,
-    uploadMetadataRepository: UploadMetadataRepository,
-    signedGetUrlIssuer: SignedGetUrlIssuer,
-    uploadExpirySeconds: Long
-): PublicEntity {
-    val category = share.entityCategory
-    val entityId = share.entityId
-
-    // Generic resolution: try document content first, then asset URL
-    val doc = when (val res = shareEntityRepository.getEntityDoc(ownerId, category, entityId)) {
-        is Resource.Success -> res.data
-        else -> null
-    }
-
-    val content = runCatching {
-        contentResolver.resolveText(ownerId, category, entityId, null)
-    }.getOrNull()?.takeIf { it.isNotBlank() }
-        ?: (doc?.get("content") as? String)?.takeIf { it.isNotBlank() }
-
-    val title = doc?.get("title") as? String ?: doc?.get("name") as? String ?: "Entity"
-    val subtitle = doc?.get("subtitle") as? String
-    val assetId = doc?.get("assetId") as? String
-
-    val assetUrl = if (!assetId.isNullOrBlank()) {
-        resolveShareAssetUrl(
-            uploadMetadataRepository = uploadMetadataRepository,
-            signedGetUrlIssuer = signedGetUrlIssuer,
-            uploadExpirySeconds = uploadExpirySeconds,
-            ownerId = ownerId,
-            assetId = assetId
-        )
-    } else null
-
-    return PublicEntity(
-        id = entityId,
-        category = category.value,
-        title = title,
-        subtitle = subtitle,
-        content = content,
-        question = doc?.get("question") as? String,
-        assetUrl = assetUrl
-    )
-}
-
-private suspend fun resolveShareAssetUrl(
-    uploadMetadataRepository: UploadMetadataRepository,
-    signedGetUrlIssuer: SignedGetUrlIssuer,
-    uploadExpirySeconds: Long,
-    ownerId: String,
-    assetId: String?
-): String? {
-    val resolvedAssetId = assetId?.takeIf { it.isNotBlank() } ?: return null
-    val record = uploadMetadataRepository.getByAssetId(resolvedAssetId) ?: return null
-    if (record.uid != ownerId) return null
-    return try {
-        signedGetUrlIssuer.issue(
-            bucket = record.bucket,
-            objectPath = record.objectName,
-            expiresInSeconds = uploadExpirySeconds
-        )
-    } catch (e: Exception) {
-        null
     }
 }

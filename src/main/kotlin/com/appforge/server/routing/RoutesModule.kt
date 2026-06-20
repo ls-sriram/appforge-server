@@ -50,6 +50,7 @@ class RoutesModule(
                 }
                 entityReviewRoutes(servicesModule.reviewServices())
                 entityShareRoutes(servicesModule.shareServices())
+                entityReviewerShareRoutes(servicesModule.shareServices())
             }
 
             route("/api/v1/entities") {
@@ -58,6 +59,22 @@ class RoutesModule(
                     this.requestIdentityProvider = servicesModule.shareServices().requestIdentityProvider
                 }
                 entityShareCollectionRoutes(servicesModule.shareServices())
+            }
+
+            route("/api/v1/reviewer-shares") {
+                install(UserAuthPlugin) {
+                    this.authService = servicesModule.shareServices().authService
+                    this.requestIdentityProvider = servicesModule.shareServices().requestIdentityProvider
+                }
+                reviewerShareManagementRoutes(servicesModule.shareServices())
+            }
+
+            route("/api/v1/reviewer") {
+                install(UserAuthPlugin) {
+                    this.authService = servicesModule.shareServices().authService
+                    this.requestIdentityProvider = servicesModule.shareServices().requestIdentityProvider
+                }
+                reviewerInboxRoutes(servicesModule.shareServices())
             }
 
             // ─── Extension routes ────────────────────────────────────────

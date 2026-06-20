@@ -52,6 +52,7 @@ class ReviewServiceTest {
             entityCategory = EntityCategory("document"),
             entityId = "e1",
             displayName = "John Doe",
+            authorEmail = "john@example.com",
             content = mapOf("feedback" to "Great job")
         )
 
@@ -60,7 +61,7 @@ class ReviewServiceTest {
         assertEquals("e1", review.entityId)
         assertEquals(ReviewAuthorRole.EXTERNAL, review.authorRole)
         assertEquals(null, review.authorId)
-        assertEquals(null, review.authorEmail)
+        assertEquals("john@example.com", review.authorEmail)
 
         coVerify {
             reviewRepo.create("user1", "document", "e1", match { it.authorRole == ReviewAuthorRole.EXTERNAL })
