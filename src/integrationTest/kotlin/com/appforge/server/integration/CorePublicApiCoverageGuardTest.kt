@@ -34,7 +34,7 @@ class CorePublicApiCoverageGuardTest {
         "POST /api/v1/entities/{type}/{id}/ai-review",
         "POST /api/v1/entities/{type}/{id}/shares",
         "GET /api/v1/entities/{type}/{id}/shares",
-        "POST /api/v1/entities/{type}/{id}/shares/{token}/revoke",
+        "POST /api/v1/entities/shares/{token}/revoke",
         "POST /api/v1/entities/{type}/{id}/shares/{token}/email",
         "GET /shares/{token}",
         "POST /shares/{token}/reviews",
