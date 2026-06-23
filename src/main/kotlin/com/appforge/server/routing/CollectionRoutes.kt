@@ -20,26 +20,46 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 
 /**
- * Generic per-app, per-user collection endpoints.
+ * Schemaless JSON document store — one endpoint for any app-defined collection.
  *
- * Collections require no schema registration — any authenticated client can
- * store arbitrary JSON objects under any collection name, scoped to its
- * `X-App-Id` and the authenticated user. Different apps on the same server
- * are fully isolated from each other.
+ * ## What this is
+ *
+ * A convenience API backed by a single JSONB table (`custom_collections`).
+ * Any authenticated client can store and retrieve arbitrary JSON objects under
+ * any collection name without any server-side code changes. Records are isolated
+ * by `X-App-Id` and the authenticated user.
+ *
+ * ## What this is NOT
+ *
+ * This is not the primary storage layer. All platform features — auth, billing,
+ * sharing, tasks, recordings, documents — use typed, normalized SQL tables with
+ * explicit schemas, foreign keys, and constraints. Those tables are the right
+ * choice whenever the data has a known structure.
+ *
+ * Use collections when:
+ * - The data shape is determined by the client app, not the server
+ * - You need a quick store without writing a new typed repository
+ * - The data is simple enough that no joins or constraints are required
+ *
+ * Use a typed [AppPlugin] repository instead when:
+ * - The data has a fixed schema that benefits from constraints or foreign keys
+ * - You need JOIN queries across tables
+ * - You need server-side validation beyond "is this valid JSON?"
  *
  * ## Endpoints
  *
- * | Method | Path                                    | Description        |
- * |--------|-----------------------------------------|--------------------|
- * | POST   | /api/v1/collections/{collection}        | Create a record    |
- * | GET    | /api/v1/collections/{collection}        | List records       |
- * | GET    | /api/v1/collections/{collection}/{id}   | Get one record     |
- * | PATCH  | /api/v1/collections/{collection}/{id}   | Replace record data|
- * | DELETE | /api/v1/collections/{collection}/{id}   | Delete a record    |
+ * | Method | Path                                    | Description         |
+ * |--------|-----------------------------------------|---------------------|
+ * | POST   | /api/v1/collections/{collection}        | Create a record     |
+ * | GET    | /api/v1/collections/{collection}        | List records        |
+ * | GET    | /api/v1/collections/{collection}/{id}   | Get one record      |
+ * | PATCH  | /api/v1/collections/{collection}/{id}   | Replace record data |
+ * | DELETE | /api/v1/collections/{collection}/{id}   | Delete a record     |
  *
  * ## Collection naming
  *
- * Collection names must be 1–64 characters: letters, digits, hyphens, underscores.
+ * Names must be 1–64 characters: letters, digits, hyphens, underscores.
+ * Different collection names within the same `X-App-Id` are independent stores.
  *
  * ## Example
  *
@@ -47,13 +67,20 @@ import io.ktor.server.routing.route
  * POST /api/v1/collections/expenses
  * X-App-Id: budget-app
  * Authorization: Bearer <token>
+ * Content-Type: application/json
  *
  * { "data": { "amount": 42.50, "category": "travel", "note": "Uber to airport" } }
  * ```
  *
- * Response:
+ * Response (`201 Created`):
  * ```json
- * { "id": "...", "collection": "expenses", "data": { ... }, "createdAt": {...}, "updatedAt": {...} }
+ * {
+ *   "id": "550e8400-...",
+ *   "collection": "expenses",
+ *   "data": { "amount": 42.50, "category": "travel", "note": "Uber to airport" },
+ *   "createdAt": { "seconds": 1750000000, "nanos": 0 },
+ *   "updatedAt": { "seconds": 1750000000, "nanos": 0 }
+ * }
  * ```
  */
 fun Route.collectionRoutes(services: CollectionServices) {

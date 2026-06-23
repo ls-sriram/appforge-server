@@ -1,8 +1,14 @@
 BEGIN;
 
--- Generic per-app, per-user, per-collection JSONB store.
--- Each record is keyed by (app_id, collection, id) so different apps
--- and different collection names inside the same app are fully isolated.
+-- Schemaless JSONB document store for the collections API.
+--
+-- This is NOT the primary storage layer. Platform features (auth, billing,
+-- sharing, tasks, documents) use dedicated, normalized tables with typed
+-- schemas. This table exists as a convenience for client apps that need to
+-- store arbitrary JSON without a server-side schema or repository.
+--
+-- Records are keyed by (app_id, collection, id): different apps and
+-- different collection names within the same app are fully isolated.
 CREATE TABLE IF NOT EXISTS custom_collections (
     id          VARCHAR(255)    NOT NULL,
     app_id      VARCHAR(255)    NOT NULL,
