@@ -5,18 +5,49 @@ import com.appforge.server.services.auth.AuthService
 import io.ktor.server.routing.Routing
 
 /**
- * A client-specific extension module.
+ * Contract for a pluggable app-specific module.
  *
- * Extensions are pluggable Kotlin modules that add app-specific
- * routes, database tables, and hook subscriptions to the platform.
+ * Extensions add routes, database tables, and hook subscriptions to the platform
+ * without modifying core server code. Each extension is identified by an [appId]
+ * that maps to the `X-App-Id` request header, so multiple apps can share one
+ * server binary while remaining fully isolated from each other.
  *
- * Each extension:
- * 1. Identifies itself with an `appId` (used in `X-App-Id` routing)
- * 2. Registers HTTP routes under its own prefix
- * 3. Optionally defines SQL tables (created by platform at startup)
- * 4. Optionally subscribes to platform hooks (before/after events)
+ * ## Recommended: use [AppPlugin] instead of implementing this directly
  *
- * ## Example
+ * [AppPlugin] is a convenience base class that eliminates boilerplate and provides
+ * a typed route DSL ([PluginRouter]) with automatic auth, SQL user context, and
+ * `db.rawQuery()` access for relational queries:
+ *
+ * ```kotlin
+ * class ExpensesPlugin : AppPlugin(appId = "expenses-app") {
+ *
+ *     override val tables = listOf("""
+ *         CREATE TABLE IF NOT EXISTS expenses (
+ *             id           VARCHAR(255) PRIMARY KEY,
+ *             owner_uid    VARCHAR(255) NOT NULL REFERENCES app_users(uid) ON DELETE CASCADE,
+ *             amount_cents INTEGER      NOT NULL,
+ *             category     VARCHAR(64)  NOT NULL,
+ *             created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+ *         )
+ *     """)
+ *
+ *     override fun routes(api: PluginRouter) {
+ *         api.authenticated {
+ *             get("/expenses") { ctx ->
+ *                 val rows = ctx.db.rawQuery(
+ *                     "SELECT * FROM expenses WHERE owner_uid = ? ORDER BY created_at DESC",
+ *                     listOf(ctx.userId)
+ *                 ).getOrThrow()
+ *                 call.respond(rows)
+ *             }
+ *         }
+ *     }
+ * }
+ * ```
+ *
+ * ## Implementing PlatformExtension directly
+ *
+ * Implement this interface when you need full control over Ktor routing or lifecycle:
  *
  * ```kotlin
  * object MyAppExtension : PlatformExtension {
@@ -24,19 +55,30 @@ import io.ktor.server.routing.Routing
  *
  *     override fun registerRoutes(routing: Routing, services: PlatformServices) {
  *         routing.route("/api/v1/my-app") {
- *             // ... app-specific routes
+ *             // ... standard Ktor routing
  *         }
  *     }
  *
  *     override fun defineTables(): List<String> = listOf(
- *         "CREATE TABLE IF NOT EXISTS extension_entities (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255))"
+ *         "CREATE TABLE IF NOT EXISTS my_entities (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255))"
  *     )
  *
  *     override fun defineHooks(): List<HookRegistration> = listOf(
- *         HookRegistration("after-entity-created", ::onEntityCreated)
+ *         HookRegistration(HookEvents.AFTER_ENTITY_CREATED, ::onEntityCreated)
  *     )
  * }
  * ```
+ *
+ * ## Registration
+ *
+ * **Code-share model** (each app gets its own binary):
+ * ```kotlin
+ * ClientRegistry.registerExtension(ExpensesPlugin())
+ * ```
+ *
+ * **Runtime-share model** (one binary, multiple `X-App-Id` values):
+ * Add the fully qualified class name to:
+ * `META-INF/services/com.appforge.server.extensions.PlatformExtension`
  */
 interface PlatformExtension {
     /**

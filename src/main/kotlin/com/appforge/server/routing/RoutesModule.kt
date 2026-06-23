@@ -18,6 +18,7 @@ import com.appforge.server.routing.documentRoutes
 import com.appforge.server.routing.publicShareRoutes
 import com.appforge.server.routing.systemRoutes
 import com.appforge.server.routing.taskRoutes
+import com.appforge.server.routing.collectionRoutes
 import com.appforge.server.routing.entityReviewRoutes
 import com.appforge.server.routing.entityShareRoutes
 import com.appforge.server.routing.entityShareCollectionRoutes
@@ -36,6 +37,7 @@ class RoutesModule(
             recordingRoutes(servicesModule.recordingServices())
             documentRoutes(servicesModule.documentServices())
             taskRoutes(servicesModule.taskServices())
+            collectionRoutes(servicesModule.collectionServices())
             reviewRoutes(servicesModule.reviewServices())
             publicShareRoutes(servicesModule.publicShareServices())
 

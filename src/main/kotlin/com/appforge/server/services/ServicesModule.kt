@@ -13,6 +13,8 @@ import com.appforge.server.services.tasks.TaskServices
 import com.appforge.server.services.uploads.UploadServices
 import com.appforge.server.services.auth.AuthProvider
 import com.appforge.server.services.billing.BillingProvider
+import com.appforge.server.services.collections.CollectionProvider
+import com.appforge.server.services.collections.CollectionServices
 import com.appforge.server.services.documents.DocumentProvider
 import com.appforge.server.services.recordings.RecordingProvider
 import com.appforge.server.services.sharing.PublicShareProvider
@@ -36,4 +38,5 @@ class ServicesModule(
     fun recordingServices(): RecordingServices = RecordingProvider(core, env)
     fun documentServices(): DocumentServices = DocumentProvider(core, env)
     fun taskServices(): TaskServices = TaskProvider(core, env)
+    fun collectionServices(): CollectionServices = CollectionProvider(core, env)
 }
