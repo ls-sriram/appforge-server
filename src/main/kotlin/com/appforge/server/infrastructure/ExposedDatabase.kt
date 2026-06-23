@@ -193,6 +193,29 @@ class ExposedDatabase(
         is JsonArray -> element.map { fromElement(it) }
     }
 
+    override suspend fun rawQuery(sql: String, params: List<Any?>): Resource<List<Map<String, Any?>>> =
+        withContext(Dispatchers.IO) {
+            try {
+                dataSource.connection.use { conn ->
+                    applyRequestSqlContext(conn)
+                    conn.prepareStatement(sql).use { stmt ->
+                        params.forEachIndexed { i, param -> stmt.setObject(i + 1, param) }
+                        val rs = stmt.executeQuery()
+                        val meta = rs.metaData
+                        val cols = (1..meta.columnCount).map { meta.getColumnLabel(it) }
+                        val rows = mutableListOf<Map<String, Any?>>()
+                        while (rs.next()) {
+                            rows += cols.associateWith { col -> rs.getObject(col) }
+                        }
+                        Resource.Success(rows)
+                    }
+                }
+            } catch (e: Exception) {
+                logger.error("rawQuery failed: ${e.message}", e)
+                Resource.Error(e)
+            }
+        }
+
     // ─── Connection helper ───────────────────────────────────────────────
 
     private suspend fun <T> execute(operation: String, block: (Connection) -> Resource<T>): Resource<T> {

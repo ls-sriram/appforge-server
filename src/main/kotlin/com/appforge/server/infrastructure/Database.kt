@@ -121,4 +121,22 @@ interface Database {
      * Unsupported implementations should throw [UnsupportedOperationException].
      */
     suspend fun <T> transaction(block: suspend TransactionContext.() -> T): Resource<T>
+
+    /**
+     * Execute a raw parameterized SQL query and return rows as column-name → value maps.
+     *
+     * Intended for extension use — lets extensions run SELECT queries (including JOINs)
+     * against their own tables without needing a typed repository.
+     *
+     * Row Level Security is still applied: the current user context is set before execution,
+     * so RLS policies on extension tables work the same as on platform tables.
+     *
+     * Use `?` placeholders for parameters to avoid SQL injection:
+     * ```kotlin
+     * database.rawQuery("SELECT * FROM expenses WHERE owner_uid = ?", listOf(userId))
+     * ```
+     *
+     * Not supported by [InMemoryDatabase] (testing stub only).
+     */
+    suspend fun rawQuery(sql: String, params: List<Any?> = emptyList()): Resource<List<Map<String, Any?>>>
 }

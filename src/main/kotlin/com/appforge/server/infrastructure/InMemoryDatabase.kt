@@ -71,5 +71,8 @@ class InMemoryDatabase : Database {
         } catch (e: Exception) { Resource.Error(e) }
     }
 
+    override suspend fun rawQuery(sql: String, params: List<Any?>): Resource<List<Map<String, Any?>>> =
+        Resource.Error(UnsupportedOperationException("rawQuery not supported in InMemoryDatabase"))
+
     fun clear() { store.clear() }
 }
