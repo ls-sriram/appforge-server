@@ -31,15 +31,15 @@ Manual suite: `./gradlew integrationTest`
 | POST | /api/v1/entities/{type}/{id}/ai-review | authorized request enqueues AI review | unauthorized request rejected |
 | POST | /api/v1/entities/{type}/{id}/shares | authorized request creates share | unauthorized request rejected |
 | GET | /api/v1/entities/{type}/{id}/shares | authorized request lists shares | unauthorized request rejected |
-| POST | /api/v1/entities/{type}/{id}/reviewer-shares | owner creates reviewer-specific authenticated share | unauthorized request rejected |
-| GET | /api/v1/entities/{type}/{id}/reviewer-shares | owner lists active reviewer shares for the entity | unauthorized request rejected |
+| POST | /api/v1/entities/{type}/{id}/collaborator-shares | owner creates collaborator-specific authenticated share | unauthorized request rejected |
+| GET | /api/v1/entities/{type}/{id}/collaborator-shares | owner lists active collaborator shares for the entity | unauthorized request rejected |
 | POST | /api/v1/entities/shares/{token}/revoke | authorized request revokes share | unauthorized request rejected |
 | POST | /api/v1/entities/{type}/{id}/shares/{token}/email | authorized request sends email | unauthorized request rejected |
-| POST | /api/v1/reviewer-shares/{shareId}/revoke | owner revokes reviewer-specific share | unauthorized request rejected |
-| GET | /api/v1/reviewer/shares | reviewer sees only shares addressed to their authenticated email | unauthorized request rejected |
-| GET | /api/v1/reviewer/shares/{shareId} | intended reviewer sees shared entity | other reviewer gets gone |
-| GET | /api/v1/reviewer/shares/{shareId}/review-template | intended reviewer gets active review form | other reviewer gets gone |
-| POST | /api/v1/reviewer/shares/{shareId}/reviews | intended reviewer submits review tied to reviewer email | other reviewer gets gone |
+| POST | /api/v1/collaborator-shares/{shareId}/revoke | owner revokes collaborator-specific share | unauthorized request rejected |
+| GET | /api/v1/collaborator/shares | collaborator sees only shares addressed to their authenticated email | unauthorized request rejected |
+| GET | /api/v1/collaborator/shares/{shareId} | intended collaborator sees shared entity | other collaborator gets gone |
+| GET | /api/v1/collaborator/shares/{shareId}/review-template | intended collaborator gets active review form | other collaborator gets gone |
+| POST | /api/v1/collaborator/shares/{shareId}/reviews | intended collaborator submits review tied to collaborator email | other collaborator gets gone |
 | GET | /shares/{token} | valid public token returns shared resource | expired/revoked token returns gone |
 | POST | /shares/{token}/reviews | valid public token accepts review | expired/revoked token returns gone |
 

@@ -25,7 +25,7 @@ import com.appforge.server.services.reviews.repository.ReviewRepository
 import com.appforge.server.services.reviews.services.ReviewService
 import com.appforge.server.services.sharing.repository.DocumentEntityDescriptorResolver
 import com.appforge.server.services.sharing.repository.EntityDescriptorResolverRegistry
-import com.appforge.server.services.sharing.repository.ReviewerShareRepository
+import com.appforge.server.services.sharing.repository.CollaboratorShareRepository
 import com.appforge.server.services.sharing.repository.ShareEntityRepository
 import com.appforge.server.services.sharing.repository.ShareRepository
 import com.appforge.server.services.sharing.services.ShareService
@@ -52,10 +52,10 @@ class ShareProvider(
         ShareRepository(relationalDb)
     }
 
-    private val reviewerShareRepository by lazy {
+    private val collaboratorShareRepository by lazy {
         val relationalDb = core.database as? ExposedDatabase
-            ?: error("Reviewer share repository requires SQL database")
-        ReviewerShareRepository(relationalDb)
+            ?: error("Collaborator share repository requires SQL database")
+        CollaboratorShareRepository(relationalDb)
     }
 
     private val shareService: ShareService by lazy {
@@ -164,9 +164,9 @@ class ShareProvider(
         )
     }
 
-    override val reviewerShareUseCases: ReviewerShareUseCases by lazy {
-        ReviewerShareUseCasesImpl(
-            reviewerShareRepository = reviewerShareRepository,
+    override val collaboratorShareUseCases: CollaboratorShareUseCases by lazy {
+        CollaboratorShareUseCasesImpl(
+            collaboratorShareRepository = collaboratorShareRepository,
             userRepository = userRepository,
             authService = authService,
             emailService = emailService,

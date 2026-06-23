@@ -7,5 +7,5 @@ interface ShareServices {
     val authService: AuthService
     val requestIdentityProvider: IdentityProvider
     val shareUseCases: ShareUseCases
-    val reviewerShareUseCases: ReviewerShareUseCases
+    val collaboratorShareUseCases: CollaboratorShareUseCases
 }

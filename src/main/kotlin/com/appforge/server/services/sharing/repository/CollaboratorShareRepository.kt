@@ -8,52 +8,52 @@ import com.appforge.server.infrastructure.time.setInstant
 import com.appforge.server.providers.transaction.SqlTransactionProvider
 import com.appforge.server.providers.transaction.TransactionProvider
 import com.appforge.server.services.reviews.models.EntityCategory
-import com.appforge.server.services.sharing.models.ReviewerEntityShare
+import com.appforge.server.services.sharing.models.CollaboratorEntityShare
 import java.time.Instant
 import java.util.Locale
 
-interface ReviewerShareRepositoryApi {
-    suspend fun create(share: ReviewerEntityShare): Resource<ReviewerEntityShare>
-    suspend fun findActiveByOwnerEntityReviewer(
+interface CollaboratorShareRepositoryApi {
+    suspend fun create(share: CollaboratorEntityShare): Resource<CollaboratorEntityShare>
+    suspend fun findActiveByOwnerEntityCollaborator(
         ownerId: String,
         entityCategory: EntityCategory,
         entityId: String,
-        reviewerEmailNormalized: String,
-    ): Resource<ReviewerEntityShare?>
+        collaboratorEmailNormalized: String,
+    ): Resource<CollaboratorEntityShare?>
     suspend fun listActiveByOwnerEntity(
         ownerId: String,
         entityCategory: EntityCategory,
         entityId: String,
         limit: Int = 100,
-    ): Resource<List<ReviewerEntityShare>>
+    ): Resource<List<CollaboratorEntityShare>>
     suspend fun revokeByIdAndOwner(
         shareId: String,
         ownerId: String,
         revokedAt: AppTimestamp,
         revokedBy: String,
     ): Resource<Unit>
-    suspend fun listActiveForReviewer(
-        reviewerEmailNormalized: String,
+    suspend fun listActiveForCollaborator(
+        collaboratorEmailNormalized: String,
         limit: Int = 100,
-    ): Resource<List<ReviewerEntityShare>>
-    suspend fun getActiveForReviewer(
+    ): Resource<List<CollaboratorEntityShare>>
+    suspend fun getActiveForCollaborator(
         shareId: String,
-        reviewerEmailNormalized: String,
-    ): Resource<ReviewerEntityShare?>
+        collaboratorEmailNormalized: String,
+    ): Resource<CollaboratorEntityShare?>
 }
 
-class ReviewerShareRepository(
+class CollaboratorShareRepository(
     sqlDatabase: ExposedDatabase,
-) : ReviewerShareRepositoryApi {
+) : CollaboratorShareRepositoryApi {
     private val tx: TransactionProvider = SqlTransactionProvider(sqlDatabase)
 
-    override suspend fun create(share: ReviewerEntityShare): Resource<ReviewerEntityShare> {
+    override suspend fun create(share: CollaboratorEntityShare): Resource<CollaboratorEntityShare> {
         return try {
             tx.write { conn ->
                 conn.prepareStatement(
                     """
-                    INSERT INTO reviewer_entity_shares (
-                        id, owner_uid, entity_type, entity_id, reviewer_email, reviewer_email_normalized,
+                    INSERT INTO collaborator_entity_shares (
+                        id, owner_uid, entity_type, entity_id, collaborator_email, collaborator_email_normalized,
                         created_by, expires_at, created_at, revoked_at, revoked_by
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """.trimIndent()
@@ -62,8 +62,8 @@ class ReviewerShareRepository(
                     stmt.setString(2, share.ownerId)
                     stmt.setString(3, share.entityCategory.value)
                     stmt.setString(4, share.entityId)
-                    stmt.setString(5, share.reviewerEmail)
-                    stmt.setString(6, share.reviewerEmailNormalized)
+                    stmt.setString(5, share.collaboratorEmail)
+                    stmt.setString(6, share.collaboratorEmailNormalized)
                     stmt.setString(7, share.createdBy)
                     stmt.setInstant(8, share.expiresAt)
                     stmt.setInstant(9, share.createdAt)
@@ -78,25 +78,25 @@ class ReviewerShareRepository(
         }
     }
 
-    override suspend fun findActiveByOwnerEntityReviewer(
+    override suspend fun findActiveByOwnerEntityCollaborator(
         ownerId: String,
         entityCategory: EntityCategory,
         entityId: String,
-        reviewerEmailNormalized: String,
-    ): Resource<ReviewerEntityShare?> = selectOne(
+        collaboratorEmailNormalized: String,
+    ): Resource<CollaboratorEntityShare?> = selectOne(
         """
-        SELECT id, owner_uid, entity_type, entity_id, reviewer_email, reviewer_email_normalized, created_by, expires_at, created_at, revoked_at, revoked_by
-        FROM reviewer_entity_shares
+        SELECT id, owner_uid, entity_type, entity_id, collaborator_email, collaborator_email_normalized, created_by, expires_at, created_at, revoked_at, revoked_by
+        FROM collaborator_entity_shares
         WHERE owner_uid = ?
           AND entity_type = ?
           AND entity_id = ?
-          AND reviewer_email_normalized = ?
+          AND collaborator_email_normalized = ?
           AND revoked_at IS NULL
           AND (expires_at IS NULL OR expires_at > NOW())
         ORDER BY created_at DESC
         LIMIT 1
         """.trimIndent(),
-        listOf(ownerId, entityCategory.value, entityId, reviewerEmailNormalized),
+        listOf(ownerId, entityCategory.value, entityId, collaboratorEmailNormalized),
     )
 
     override suspend fun listActiveByOwnerEntity(
@@ -104,10 +104,10 @@ class ReviewerShareRepository(
         entityCategory: EntityCategory,
         entityId: String,
         limit: Int,
-    ): Resource<List<ReviewerEntityShare>> = selectMany(
+    ): Resource<List<CollaboratorEntityShare>> = selectMany(
         """
-        SELECT id, owner_uid, entity_type, entity_id, reviewer_email, reviewer_email_normalized, created_by, expires_at, created_at, revoked_at, revoked_by
-        FROM reviewer_entity_shares
+        SELECT id, owner_uid, entity_type, entity_id, collaborator_email, collaborator_email_normalized, created_by, expires_at, created_at, revoked_at, revoked_by
+        FROM collaborator_entity_shares
         WHERE owner_uid = ?
           AND entity_type = ?
           AND entity_id = ?
@@ -129,7 +129,7 @@ class ReviewerShareRepository(
             val rows = tx.write { conn ->
                 conn.prepareStatement(
                     """
-                    UPDATE reviewer_entity_shares
+                    UPDATE collaborator_entity_shares
                     SET revoked_at = ?, revoked_by = ?
                     WHERE id = ?
                       AND owner_uid = ?
@@ -149,45 +149,45 @@ class ReviewerShareRepository(
         }
     }
 
-    override suspend fun listActiveForReviewer(
-        reviewerEmailNormalized: String,
+    override suspend fun listActiveForCollaborator(
+        collaboratorEmailNormalized: String,
         limit: Int,
-    ): Resource<List<ReviewerEntityShare>> = selectMany(
+    ): Resource<List<CollaboratorEntityShare>> = selectMany(
         """
-        SELECT id, owner_uid, entity_type, entity_id, reviewer_email, reviewer_email_normalized, created_by, expires_at, created_at, revoked_at, revoked_by
-        FROM reviewer_entity_shares
-        WHERE reviewer_email_normalized = ?
+        SELECT id, owner_uid, entity_type, entity_id, collaborator_email, collaborator_email_normalized, created_by, expires_at, created_at, revoked_at, revoked_by
+        FROM collaborator_entity_shares
+        WHERE collaborator_email_normalized = ?
           AND revoked_at IS NULL
           AND (expires_at IS NULL OR expires_at > NOW())
         ORDER BY created_at DESC
         LIMIT ?
         """.trimIndent(),
-        listOf(normalizeEmail(reviewerEmailNormalized), limit.coerceIn(1, 500)),
+        listOf(normalizeEmail(collaboratorEmailNormalized), limit.coerceIn(1, 500)),
     )
 
-    override suspend fun getActiveForReviewer(
+    override suspend fun getActiveForCollaborator(
         shareId: String,
-        reviewerEmailNormalized: String,
-    ): Resource<ReviewerEntityShare?> = selectOne(
+        collaboratorEmailNormalized: String,
+    ): Resource<CollaboratorEntityShare?> = selectOne(
         """
-        SELECT id, owner_uid, entity_type, entity_id, reviewer_email, reviewer_email_normalized, created_by, expires_at, created_at, revoked_at, revoked_by
-        FROM reviewer_entity_shares
+        SELECT id, owner_uid, entity_type, entity_id, collaborator_email, collaborator_email_normalized, created_by, expires_at, created_at, revoked_at, revoked_by
+        FROM collaborator_entity_shares
         WHERE id = ?
-          AND reviewer_email_normalized = ?
+          AND collaborator_email_normalized = ?
           AND revoked_at IS NULL
           AND (expires_at IS NULL OR expires_at > NOW())
         LIMIT 1
         """.trimIndent(),
-        listOf(shareId, normalizeEmail(reviewerEmailNormalized)),
+        listOf(shareId, normalizeEmail(collaboratorEmailNormalized)),
     )
 
-    private suspend fun selectOne(sql: String, params: List<Any>): Resource<ReviewerEntityShare?> {
+    private suspend fun selectOne(sql: String, params: List<Any>): Resource<CollaboratorEntityShare?> {
         return try {
             val result = tx.read { conn ->
                 conn.prepareStatement(sql).use { stmt ->
                     bind(stmt, params)
                     stmt.executeQuery().use { rs ->
-                        if (!rs.next()) null else rs.toReviewerShare()
+                        if (!rs.next()) null else rs.toCollaboratorShare()
                     }
                 }
             }
@@ -197,14 +197,14 @@ class ReviewerShareRepository(
         }
     }
 
-    private suspend fun selectMany(sql: String, params: List<Any>): Resource<List<ReviewerEntityShare>> {
+    private suspend fun selectMany(sql: String, params: List<Any>): Resource<List<CollaboratorEntityShare>> {
         return try {
             val result = tx.read { conn ->
                 conn.prepareStatement(sql).use { stmt ->
                     bind(stmt, params)
                     stmt.executeQuery().use { rs ->
                         buildList {
-                            while (rs.next()) add(rs.toReviewerShare())
+                            while (rs.next()) add(rs.toCollaboratorShare())
                         }
                     }
                 }
@@ -226,17 +226,17 @@ class ReviewerShareRepository(
     }
 }
 
-private fun java.sql.ResultSet.toReviewerShare(): ReviewerEntityShare =
-    ReviewerEntityShare(
+private fun java.sql.ResultSet.toCollaboratorShare(): CollaboratorEntityShare =
+    CollaboratorEntityShare(
         id = getString("id"),
         ownerId = getString("owner_uid"),
         entityCategory = EntityCategory.fromWire(getString("entity_type")),
         entityId = getString("entity_id"),
-        reviewerEmail = getString("reviewer_email"),
-        reviewerEmailNormalized = getString("reviewer_email_normalized"),
+        collaboratorEmail = getString("collaborator_email"),
+        collaboratorEmailNormalized = getString("collaborator_email_normalized"),
         createdBy = getString("created_by"),
         expiresAt = getAppTimestamp("expires_at"),
-        createdAt = getAppTimestamp("created_at") ?: error("reviewer_entity_shares.created_at is null"),
+        createdAt = getAppTimestamp("created_at") ?: error("collaborator_entity_shares.created_at is null"),
         revokedAt = getAppTimestamp("revoked_at"),
         revokedBy = getString("revoked_by"),
     )

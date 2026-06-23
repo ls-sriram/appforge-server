@@ -1,9 +1,9 @@
 package com.appforge.server.services.sharing
 
-import com.appforge.server.api.sharing.CreateReviewerShareRequest
-import com.appforge.server.api.sharing.ReviewerShareEntityResponse
-import com.appforge.server.api.sharing.ReviewerShareResponse
-import com.appforge.server.api.sharing.SubmitReviewerShareReviewRequest
+import com.appforge.server.api.sharing.CollaboratorShareEntityResponse
+import com.appforge.server.api.sharing.CollaboratorShareResponse
+import com.appforge.server.api.sharing.CreateCollaboratorShareRequest
+import com.appforge.server.api.sharing.SubmitCollaboratorReviewRequest
 import com.appforge.server.api.reviews.ReviewResponse
 import com.appforge.server.api.reviews.ReviewTemplateResponse
 import com.appforge.server.infrastructure.Resource
@@ -23,10 +23,10 @@ import com.appforge.server.services.forms.validation.ReviewFormValidator
 import com.appforge.server.services.reviews.ai.ReviewContentResolver
 import com.appforge.server.services.reviews.models.EntityCategory
 import com.appforge.server.services.reviews.services.ReviewService
-import com.appforge.server.services.sharing.models.ReviewerEntityShare
-import com.appforge.server.services.sharing.models.ReviewerIdentity
-import com.appforge.server.services.sharing.models.ReviewerShareStatus
-import com.appforge.server.services.sharing.repository.ReviewerShareRepositoryApi
+import com.appforge.server.services.sharing.models.CollaboratorEntityShare
+import com.appforge.server.services.sharing.models.CollaboratorIdentity
+import com.appforge.server.services.sharing.models.CollaboratorShareStatus
+import com.appforge.server.services.sharing.repository.CollaboratorShareRepositoryApi
 import com.appforge.server.services.sharing.repository.ShareEntityRepositoryApi
 import com.appforge.server.services.uploads.SignedGetUrlIssuer
 import com.appforge.server.services.uploads.UploadMetadataRepository
@@ -34,40 +34,40 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
-interface ReviewerShareUseCases {
-    suspend fun createReviewerShare(
+interface CollaboratorShareUseCases {
+    suspend fun createCollaboratorShare(
         userId: String,
         type: String,
         entityId: String,
-        request: CreateReviewerShareRequest,
-    ): ReviewerShareResponse
-    suspend fun listReviewerSharesForEntity(
+        request: CreateCollaboratorShareRequest,
+    ): CollaboratorShareResponse
+    suspend fun listCollaboratorSharesForEntity(
         userId: String,
         type: String,
         entityId: String,
-    ): List<ReviewerShareResponse>
-    suspend fun revokeReviewerShare(
+    ): List<CollaboratorShareResponse>
+    suspend fun revokeCollaboratorShare(
         userId: String,
         shareId: String,
     )
-    suspend fun listReviewerInbox(reviewerUserId: String): List<ReviewerShareResponse>
-    suspend fun getReviewerShare(
-        reviewerUserId: String,
+    suspend fun listCollaboratorInbox(collaboratorUserId: String): List<CollaboratorShareResponse>
+    suspend fun getCollaboratorShare(
+        collaboratorUserId: String,
         shareId: String,
-    ): ReviewerShareEntityResponse
-    suspend fun getReviewerShareReviewTemplate(
-        reviewerUserId: String,
+    ): CollaboratorShareEntityResponse
+    suspend fun getCollaboratorReviewTemplate(
+        collaboratorUserId: String,
         shareId: String,
     ): ReviewTemplateResponse
-    suspend fun submitReviewerShareReview(
-        reviewerUserId: String,
+    suspend fun submitCollaboratorReview(
+        collaboratorUserId: String,
         shareId: String,
-        request: SubmitReviewerShareReviewRequest,
+        request: SubmitCollaboratorReviewRequest,
     ): ReviewResponse
 }
 
-class ReviewerShareUseCasesImpl(
-    private val reviewerShareRepository: ReviewerShareRepositoryApi,
+class CollaboratorShareUseCasesImpl(
+    private val collaboratorShareRepository: CollaboratorShareRepositoryApi,
     private val userRepository: UserRepositoryApi,
     private val authService: AuthService,
     private val emailService: EmailService,
@@ -80,48 +80,48 @@ class ReviewerShareUseCasesImpl(
     private val signedGetUrlIssuer: SignedGetUrlIssuer,
     private val uploadExpirySeconds: Long,
     private val timestampProvider: TimestampProvider = UtcTimestampProvider,
-) : ReviewerShareUseCases {
-    override suspend fun createReviewerShare(
+) : CollaboratorShareUseCases {
+    override suspend fun createCollaboratorShare(
         userId: String,
         type: String,
         entityId: String,
-        request: CreateReviewerShareRequest,
-    ): ReviewerShareResponse {
-        val reviewerEmail = request.reviewerEmail.trim()
-        if (reviewerEmail.isBlank()) throw IllegalArgumentException("Reviewer email is required.")
+        request: CreateCollaboratorShareRequest,
+    ): CollaboratorShareResponse {
+        val collaboratorEmail = request.collaboratorEmail.trim()
+        if (collaboratorEmail.isBlank()) throw IllegalArgumentException("Collaborator email is required.")
         val owner = userRepository.getUser(userId) ?: throw IllegalArgumentException("Owner profile not found.")
-        val normalizedReviewerEmail = normalizeEmail(reviewerEmail)
-        if (normalizeEmail(owner.email) == normalizedReviewerEmail) {
-            throw IllegalArgumentException("Reviewer email cannot match owner email.")
+        val normalizedCollaboratorEmail = normalizeEmail(collaboratorEmail)
+        if (normalizeEmail(owner.email) == normalizedCollaboratorEmail) {
+            throw IllegalArgumentException("Collaborator email cannot match owner email.")
         }
         val category = EntityCategory(type)
-        val existing = reviewerShareRepository.findActiveByOwnerEntityReviewer(userId, category, entityId, normalizedReviewerEmail)
+        val existing = collaboratorShareRepository.findActiveByOwnerEntityCollaborator(userId, category, entityId, normalizedCollaboratorEmail)
         if (existing is Resource.Success && existing.data != null) {
             return existing.data.toResponse(ownerEmail = owner.email, ownerName = owner.displayName)
         }
         if (existing is Resource.Error) throw IllegalStateException(existing.exception.message ?: "Error")
 
         val now = timestampProvider.now()
-        val share = ReviewerEntityShare(
+        val share = CollaboratorEntityShare(
             id = IdentifierProvider.newUuid(),
             ownerId = userId,
             entityCategory = category,
             entityId = entityId,
-            reviewerEmail = reviewerEmail,
-            reviewerEmailNormalized = normalizedReviewerEmail,
+            collaboratorEmail = collaboratorEmail,
+            collaboratorEmailNormalized = normalizedCollaboratorEmail,
             createdBy = userId,
             expiresAt = now.plus(21, ChronoUnit.DAYS),
             createdAt = now,
         )
-        when (val result = reviewerShareRepository.create(share)) {
+        when (val result = collaboratorShareRepository.create(share)) {
             is Resource.Success -> {
-                val reviewerUrl = "$publicBaseUrl/web/reviewer/shares/${share.id}"
+                val collaboratorUrl = "$publicBaseUrl/web/collaborator/shares/${share.id}"
                 val emailContent = EmailTemplates.reviewShareInvite(
-                    shareUrl = reviewerUrl,
+                    shareUrl = collaboratorUrl,
                     entityCategory = share.entityCategory.value,
                 )
                 emailService.sendEmail(
-                    to = reviewerEmail,
+                    to = collaboratorEmail,
                     subject = emailContent.subject,
                     content = emailContent.html,
                     isHtml = true,
@@ -133,21 +133,21 @@ class ReviewerShareUseCasesImpl(
         }
     }
 
-    override suspend fun listReviewerSharesForEntity(
+    override suspend fun listCollaboratorSharesForEntity(
         userId: String,
         type: String,
         entityId: String,
-    ): List<ReviewerShareResponse> {
+    ): List<CollaboratorShareResponse> {
         val owner = userRepository.getUser(userId) ?: throw IllegalArgumentException("Owner profile not found.")
-        return when (val result = reviewerShareRepository.listActiveByOwnerEntity(userId, EntityCategory(type), entityId)) {
+        return when (val result = collaboratorShareRepository.listActiveByOwnerEntity(userId, EntityCategory(type), entityId)) {
             is Resource.Success -> result.data.map { it.toResponse(ownerEmail = owner.email, ownerName = owner.displayName) }
             is Resource.Error -> throw IllegalStateException(result.exception.message ?: "Error")
             Resource.Loading -> emptyList()
         }
     }
 
-    override suspend fun revokeReviewerShare(userId: String, shareId: String) {
-        when (val result = reviewerShareRepository.revokeByIdAndOwner(ownerId = userId, shareId = shareId, revokedAt = timestampProvider.now(), revokedBy = userId)) {
+    override suspend fun revokeCollaboratorShare(userId: String, shareId: String) {
+        when (val result = collaboratorShareRepository.revokeByIdAndOwner(ownerId = userId, shareId = shareId, revokedAt = timestampProvider.now(), revokedBy = userId)) {
             is Resource.Success -> return
             is Resource.Error -> {
                 if (result.exception.message == "Unauthorized") throw ForbiddenException("Unauthorized")
@@ -157,9 +157,9 @@ class ReviewerShareUseCasesImpl(
         }
     }
 
-    override suspend fun listReviewerInbox(reviewerUserId: String): List<ReviewerShareResponse> {
-        val reviewerIdentity = resolveReviewerIdentity(reviewerUserId)
-        return when (val result = reviewerShareRepository.listActiveForReviewer(reviewerIdentity.emailNormalized())) {
+    override suspend fun listCollaboratorInbox(collaboratorUserId: String): List<CollaboratorShareResponse> {
+        val collaboratorIdentity = resolveCollaboratorIdentity(collaboratorUserId)
+        return when (val result = collaboratorShareRepository.listActiveForCollaborator(collaboratorIdentity.emailNormalized())) {
             is Resource.Success -> result.data.map { share ->
                 val owner = userRepository.getUser(share.ownerId)
                 share.toResponse(
@@ -172,12 +172,12 @@ class ReviewerShareUseCasesImpl(
         }
     }
 
-    override suspend fun getReviewerShare(
-        reviewerUserId: String,
+    override suspend fun getCollaboratorShare(
+        collaboratorUserId: String,
         shareId: String,
-    ): ReviewerShareEntityResponse {
-        val reviewerIdentity = resolveReviewerIdentity(reviewerUserId)
-        val share = loadActiveReviewerShare(shareId, reviewerIdentity.emailNormalized())
+    ): CollaboratorShareEntityResponse {
+        val collaboratorIdentity = resolveCollaboratorIdentity(collaboratorUserId)
+        val share = loadActiveCollaboratorShare(shareId, collaboratorIdentity.emailNormalized())
         val owner = userRepository.getUser(share.ownerId)
         val entity = resolveSharedEntity(
             contentResolver = contentResolver,
@@ -189,30 +189,30 @@ class ReviewerShareUseCasesImpl(
             signedGetUrlIssuer = signedGetUrlIssuer,
             uploadExpirySeconds = uploadExpirySeconds,
         )
-        return ReviewerShareEntityResponse(
+        return CollaboratorShareEntityResponse(
             share = share.toResponse(ownerEmail = owner?.email, ownerName = owner?.displayName),
             entity = entity,
         )
     }
 
-    override suspend fun getReviewerShareReviewTemplate(
-        reviewerUserId: String,
+    override suspend fun getCollaboratorReviewTemplate(
+        collaboratorUserId: String,
         shareId: String,
     ): ReviewTemplateResponse {
-        val reviewerIdentity = resolveReviewerIdentity(reviewerUserId)
-        val share = loadActiveReviewerShare(shareId, reviewerIdentity.emailNormalized())
+        val collaboratorIdentity = resolveCollaboratorIdentity(collaboratorUserId)
+        val share = loadActiveCollaboratorShare(shareId, collaboratorIdentity.emailNormalized())
         val reviewForm = formRepository.getActiveReviewFormByEntityType(share.entityCategory.value)
             ?: throw GoneException("Review form not found")
         return ReviewTemplateResponse(reviewForm = reviewForm)
     }
 
-    override suspend fun submitReviewerShareReview(
-        reviewerUserId: String,
+    override suspend fun submitCollaboratorReview(
+        collaboratorUserId: String,
         shareId: String,
-        request: SubmitReviewerShareReviewRequest,
+        request: SubmitCollaboratorReviewRequest,
     ): ReviewResponse {
-        val reviewerIdentity = resolveReviewerIdentity(reviewerUserId)
-        val share = loadActiveReviewerShare(shareId, reviewerIdentity.emailNormalized())
+        val collaboratorIdentity = resolveCollaboratorIdentity(collaboratorUserId)
+        val share = loadActiveCollaboratorShare(shareId, collaboratorIdentity.emailNormalized())
         val reviewForm = formRepository.getActiveReviewFormByEntityType(share.entityCategory.value)
             ?: throw IllegalArgumentException("No active review form configured for ${share.entityCategory.value}.")
         if (request.reviewFormId != reviewForm.id || request.reviewFormVersion != reviewForm.version) {
@@ -231,15 +231,15 @@ class ReviewerShareUseCasesImpl(
             }
         }
 
-        val displayName = reviewerIdentity.displayName?.takeIf { it.isNotBlank() }
-            ?: reviewerIdentity.email.substringBefore("@")
+        val displayName = collaboratorIdentity.displayName?.takeIf { it.isNotBlank() }
+            ?: collaboratorIdentity.email.substringBefore("@")
 
         val result = reviewService.submitExternalReview(
             userId = share.ownerId,
             entityCategory = share.entityCategory,
             entityId = share.entityId,
             displayName = displayName,
-            authorEmail = reviewerIdentity.email,
+            authorEmail = collaboratorIdentity.email,
             content = content,
         )
         return when (result) {
@@ -249,25 +249,25 @@ class ReviewerShareUseCasesImpl(
         }
     }
 
-    private suspend fun resolveReviewerIdentity(reviewerUserId: String): ReviewerIdentity {
-        val user = userRepository.getUser(reviewerUserId)
-        val email = user?.email ?: authService.getUserEmail(reviewerUserId)
-        if (email.isNullOrBlank()) throw ForbiddenException("Reviewer account is missing email.")
-        return ReviewerIdentity(
-            userId = reviewerUserId,
+    private suspend fun resolveCollaboratorIdentity(collaboratorUserId: String): CollaboratorIdentity {
+        val user = userRepository.getUser(collaboratorUserId)
+        val email = user?.email ?: authService.getUserEmail(collaboratorUserId)
+        if (email.isNullOrBlank()) throw ForbiddenException("Collaborator account is missing email.")
+        return CollaboratorIdentity(
+            userId = collaboratorUserId,
             email = email,
             displayName = user?.displayName,
         )
     }
 
-    private suspend fun loadActiveReviewerShare(
+    private suspend fun loadActiveCollaboratorShare(
         shareId: String,
-        reviewerEmailNormalized: String,
-    ): ReviewerEntityShare {
-        return when (val result = reviewerShareRepository.getActiveForReviewer(shareId, reviewerEmailNormalized)) {
-            is Resource.Success -> result.data ?: throw GoneException("Reviewer share not found")
-            is Resource.Error -> throw GoneException(result.exception.message ?: "Reviewer share not found")
-            Resource.Loading -> throw GoneException("Reviewer share not found")
+        collaboratorEmailNormalized: String,
+    ): CollaboratorEntityShare {
+        return when (val result = collaboratorShareRepository.getActiveForCollaborator(shareId, collaboratorEmailNormalized)) {
+            is Resource.Success -> result.data ?: throw GoneException("Collaborator share not found")
+            is Resource.Error -> throw GoneException(result.exception.message ?: "Collaborator share not found")
+            Resource.Loading -> throw GoneException("Collaborator share not found")
         }
     }
 }
@@ -275,24 +275,24 @@ class ReviewerShareUseCasesImpl(
 private fun normalizeEmail(value: String): String =
     value.trim().lowercase(Locale.US)
 
-private fun ReviewerIdentity.emailNormalized(): String = normalizeEmail(email)
+private fun CollaboratorIdentity.emailNormalized(): String = normalizeEmail(email)
 
-private fun ReviewerEntityShare.toResponse(
+private fun CollaboratorEntityShare.toResponse(
     ownerEmail: String?,
     ownerName: String?,
-): ReviewerShareResponse {
+): CollaboratorShareResponse {
     val status = when {
-        revokedAt != null -> ReviewerShareStatus.REVOKED.wire
-        expiresAt != null && !expiresAt.isAfter(Instant.now()) -> ReviewerShareStatus.EXPIRED.wire
-        else -> ReviewerShareStatus.ACTIVE.wire
+        revokedAt != null -> CollaboratorShareStatus.REVOKED.wire
+        expiresAt != null && !expiresAt.isAfter(Instant.now()) -> CollaboratorShareStatus.EXPIRED.wire
+        else -> CollaboratorShareStatus.ACTIVE.wire
     }
-    return ReviewerShareResponse(
+    return CollaboratorShareResponse(
         id = id,
         entityType = entityCategory.value,
         entityId = entityId,
-        reviewerEmail = reviewerEmail,
+        collaboratorEmail = collaboratorEmail,
         status = status,
-        createdAt = instantToProtoTimestamp(createdAt) ?: error("reviewer share createdAt is required"),
+        createdAt = instantToProtoTimestamp(createdAt) ?: error("collaborator share createdAt is required"),
         expiresAt = instantToProtoTimestamp(expiresAt),
         revokedAt = instantToProtoTimestamp(revokedAt),
         ownerUid = ownerId,

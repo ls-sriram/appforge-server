@@ -61,7 +61,7 @@ import com.appforge.server.services.reviews.ReviewServices
 import com.appforge.server.services.reviews.ReviewUseCases
 import com.appforge.server.services.sharing.PublicShareServices
 import com.appforge.server.services.sharing.PublicShareUseCases
-import com.appforge.server.services.sharing.ReviewerShareUseCases
+import com.appforge.server.services.sharing.CollaboratorShareUseCases
 import com.appforge.server.services.sharing.ShareServices
 import com.appforge.server.services.sharing.ShareUseCases
 import com.appforge.server.services.system.HealthUseCases
@@ -347,7 +347,7 @@ class CorePublicApiRouteContractIntegrationTest {
                         override val authService = authService
                         override val requestIdentityProvider = requestIdentityProvider
                         override val shareUseCases = shareUseCases
-                        override val reviewerShareUseCases = mockk<ReviewerShareUseCases>(relaxed = true)
+                        override val collaboratorShareUseCases = mockk<CollaboratorShareUseCases>(relaxed = true)
                     })
                 }
             }

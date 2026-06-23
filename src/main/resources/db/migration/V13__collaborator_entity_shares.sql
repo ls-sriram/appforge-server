@@ -1,0 +1,6 @@
+ALTER TABLE reviewer_entity_shares RENAME TO collaborator_entity_shares;
+ALTER TABLE collaborator_entity_shares RENAME COLUMN reviewer_email TO collaborator_email;
+ALTER TABLE collaborator_entity_shares RENAME COLUMN reviewer_email_normalized TO collaborator_email_normalized;
+ALTER INDEX idx_reviewer_entity_shares_owner_entity RENAME TO idx_collaborator_entity_shares_owner_entity;
+ALTER INDEX idx_reviewer_entity_shares_reviewer_email RENAME TO idx_collaborator_entity_shares_collaborator_email;
+ALTER INDEX idx_reviewer_entity_shares_active RENAME TO idx_collaborator_entity_shares_active;

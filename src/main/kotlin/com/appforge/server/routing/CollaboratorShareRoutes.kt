@@ -1,8 +1,8 @@
 package com.appforge.server.routing
 
 import com.appforge.server.api.ErrorResponse
-import com.appforge.server.api.sharing.CreateReviewerShareRequest
-import com.appforge.server.api.sharing.SubmitReviewerShareReviewRequest
+import com.appforge.server.api.sharing.CreateCollaboratorShareRequest
+import com.appforge.server.api.sharing.SubmitCollaboratorReviewRequest
 import com.appforge.server.middleware.RequestContextKey
 import com.appforge.server.services.sharing.ShareServices
 import io.ktor.http.HttpStatusCode
@@ -13,10 +13,10 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 
-fun Route.entityReviewerShareRoutes(services: ShareServices) {
-    val reviewerShareUseCases = services.reviewerShareUseCases
+fun Route.entityCollaboratorShareRoutes(services: ShareServices) {
+    val collaboratorShareUseCases = services.collaboratorShareUseCases
 
-    post("/reviewer-shares") {
+    post("/collaborator-shares") {
         val ctx = call.attributes[RequestContextKey]
         val type = call.parameters["type"]
         if (type.isNullOrBlank()) {
@@ -28,13 +28,13 @@ fun Route.entityReviewerShareRoutes(services: ShareServices) {
             call.respond(HttpStatusCode.BadRequest, ErrorResponse("Entity id is required."))
             return@post
         }
-        val request = call.receive<CreateReviewerShareRequest>()
+        val request = call.receive<CreateCollaboratorShareRequest>()
         withRouteSqlUserContext(ctx) {
-            call.respond(HttpStatusCode.Created, reviewerShareUseCases.createReviewerShare(ctx.userId, type, entityId, request))
+            call.respond(HttpStatusCode.Created, collaboratorShareUseCases.createCollaboratorShare(ctx.userId, type, entityId, request))
         }
     }
 
-    get("/reviewer-shares") {
+    get("/collaborator-shares") {
         val ctx = call.attributes[RequestContextKey]
         val type = call.parameters["type"]
         if (type.isNullOrBlank()) {
@@ -47,35 +47,35 @@ fun Route.entityReviewerShareRoutes(services: ShareServices) {
             return@get
         }
         withRouteSqlUserContext(ctx) {
-            call.respond(reviewerShareUseCases.listReviewerSharesForEntity(ctx.userId, type, entityId))
+            call.respond(collaboratorShareUseCases.listCollaboratorSharesForEntity(ctx.userId, type, entityId))
         }
     }
 }
 
-fun Route.reviewerShareManagementRoutes(services: ShareServices) {
-    val reviewerShareUseCases = services.reviewerShareUseCases
+fun Route.collaboratorShareManagementRoutes(services: ShareServices) {
+    val collaboratorShareUseCases = services.collaboratorShareUseCases
 
     post("/{shareId}/revoke") {
         val ctx = call.attributes[RequestContextKey]
         val shareId = call.parameters["shareId"]
         if (shareId.isNullOrBlank()) {
-            call.respond(HttpStatusCode.BadRequest, ErrorResponse("Reviewer share id is required."))
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse("Collaborator share id is required."))
             return@post
         }
         withRouteSqlUserContext(ctx) {
-            reviewerShareUseCases.revokeReviewerShare(ctx.userId, shareId)
+            collaboratorShareUseCases.revokeCollaboratorShare(ctx.userId, shareId)
             call.respond(HttpStatusCode.NoContent)
         }
     }
 }
 
-fun Route.reviewerInboxRoutes(services: ShareServices) {
-    val reviewerShareUseCases = services.reviewerShareUseCases
+fun Route.collaboratorInboxRoutes(services: ShareServices) {
+    val collaboratorShareUseCases = services.collaboratorShareUseCases
 
     get("/shares") {
         val ctx = call.attributes[RequestContextKey]
         withRouteSqlUserContext(ctx) {
-            call.respond(reviewerShareUseCases.listReviewerInbox(ctx.userId))
+            call.respond(collaboratorShareUseCases.listCollaboratorInbox(ctx.userId))
         }
     }
 
@@ -83,11 +83,11 @@ fun Route.reviewerInboxRoutes(services: ShareServices) {
         val ctx = call.attributes[RequestContextKey]
         val shareId = call.parameters["shareId"]
         if (shareId.isNullOrBlank()) {
-            call.respond(HttpStatusCode.BadRequest, ErrorResponse("Reviewer share id is required."))
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse("Collaborator share id is required."))
             return@get
         }
         withRouteSqlUserContext(ctx) {
-            call.respond(reviewerShareUseCases.getReviewerShare(ctx.userId, shareId))
+            call.respond(collaboratorShareUseCases.getCollaboratorShare(ctx.userId, shareId))
         }
     }
 
@@ -95,11 +95,11 @@ fun Route.reviewerInboxRoutes(services: ShareServices) {
         val ctx = call.attributes[RequestContextKey]
         val shareId = call.parameters["shareId"]
         if (shareId.isNullOrBlank()) {
-            call.respond(HttpStatusCode.BadRequest, ErrorResponse("Reviewer share id is required."))
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse("Collaborator share id is required."))
             return@get
         }
         withRouteSqlUserContext(ctx) {
-            call.respond(reviewerShareUseCases.getReviewerShareReviewTemplate(ctx.userId, shareId))
+            call.respond(collaboratorShareUseCases.getCollaboratorReviewTemplate(ctx.userId, shareId))
         }
     }
 
@@ -107,12 +107,12 @@ fun Route.reviewerInboxRoutes(services: ShareServices) {
         val ctx = call.attributes[RequestContextKey]
         val shareId = call.parameters["shareId"]
         if (shareId.isNullOrBlank()) {
-            call.respond(HttpStatusCode.BadRequest, ErrorResponse("Reviewer share id is required."))
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse("Collaborator share id is required."))
             return@post
         }
-        val request = call.receive<SubmitReviewerShareReviewRequest>()
+        val request = call.receive<SubmitCollaboratorReviewRequest>()
         withRouteSqlUserContext(ctx) {
-            call.respond(HttpStatusCode.Created, reviewerShareUseCases.submitReviewerShareReview(ctx.userId, shareId, request))
+            call.respond(HttpStatusCode.Created, collaboratorShareUseCases.submitCollaboratorReview(ctx.userId, shareId, request))
         }
     }
 }

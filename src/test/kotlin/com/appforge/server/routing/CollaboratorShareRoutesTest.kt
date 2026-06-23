@@ -6,16 +6,16 @@ import com.appforge.server.api.reviews.ReviewResponse
 import com.appforge.server.api.reviews.ReviewTemplate
 import com.appforge.server.api.reviews.ReviewTemplateField
 import com.appforge.server.api.reviews.ReviewTemplateResponse
-import com.appforge.server.api.sharing.CreateReviewerShareRequest
+import com.appforge.server.api.sharing.CollaboratorShareEntityResponse
+import com.appforge.server.api.sharing.CollaboratorShareResponse
+import com.appforge.server.api.sharing.CreateCollaboratorShareRequest
 import com.appforge.server.api.sharing.PublicEntity
-import com.appforge.server.api.sharing.ReviewerShareEntityResponse
-import com.appforge.server.api.sharing.ReviewerShareResponse
-import com.appforge.server.api.sharing.SubmitReviewerShareReviewRequest
+import com.appforge.server.api.sharing.SubmitCollaboratorReviewRequest
 import com.appforge.server.middleware.UserAuthPlugin
 import com.appforge.server.middleware.configureErrorHandling
 import com.appforge.server.providers.identity.ExternalIdentityProvider
 import com.appforge.server.services.auth.AuthService
-import com.appforge.server.services.sharing.ReviewerShareUseCases
+import com.appforge.server.services.sharing.CollaboratorShareUseCases
 import com.appforge.server.services.sharing.ShareServices
 import com.appforge.server.services.sharing.ShareUseCases
 import com.google.firebase.auth.FirebaseToken
@@ -43,28 +43,28 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ReviewerShareRoutesTest {
+class CollaboratorShareRoutesTest {
     private val json = Json { ignoreUnknownKeys = true }
 
     @Test
-    fun `reviewer share routes enforce auth and delegate to use cases`() = testApplication {
+    fun `collaborator share routes enforce auth and delegate to use cases`() = testApplication {
         val authService = mockk<AuthService>()
         val ownerToken = mockk<FirebaseToken>()
-        val reviewerToken = mockk<FirebaseToken>()
-        val reviewerShareUseCases = mockk<ReviewerShareUseCases>()
+        val collaboratorToken = mockk<FirebaseToken>()
+        val collaboratorShareUseCases = mockk<CollaboratorShareUseCases>()
 
         every { ownerToken.uid } returns "user-1"
-        every { reviewerToken.uid } returns "reviewer-1"
+        every { collaboratorToken.uid } returns "collaborator-1"
         every { authService.verifyIdToken("owner-token") } returns ownerToken
-        every { authService.verifyIdToken("reviewer-token") } returns reviewerToken
+        every { authService.verifyIdToken("collaborator-token") } returns collaboratorToken
         every { authService.verifySessionCookie(any()) } returns null
         every { authService.sessionCookieName } returns "session"
 
-        val shareResponse = ReviewerShareResponse(
+        val shareResponse = CollaboratorShareResponse(
             id = "share-1",
             entityType = "document",
             entityId = "doc-1",
-            reviewerEmail = "mentor@example.com",
+            collaboratorEmail = "mentor@example.com",
             status = "active",
             createdAt = ProtoTimestamp(seconds = 1704067200, nanos = 0),
             expiresAt = ProtoTimestamp(seconds = 1705881600, nanos = 0),
@@ -81,7 +81,7 @@ class ReviewerShareRoutesTest {
             content = mapOf("summary" to JsonPrimitive("Looks good")),
             createdAtTimestamp = 1704067200000,
         )
-        val shareEntityResponse = ReviewerShareEntityResponse(
+        val shareEntityResponse = CollaboratorShareEntityResponse(
             share = shareResponse,
             entity = PublicEntity(
                 id = "doc-1",
@@ -111,24 +111,24 @@ class ReviewerShareRoutesTest {
         )
 
         coEvery {
-            reviewerShareUseCases.createReviewerShare("user-1", "document", "doc-1", any())
+            collaboratorShareUseCases.createCollaboratorShare("user-1", "document", "doc-1", any())
         } returns shareResponse
         coEvery {
-            reviewerShareUseCases.listReviewerSharesForEntity("user-1", "document", "doc-1")
+            collaboratorShareUseCases.listCollaboratorSharesForEntity("user-1", "document", "doc-1")
         } returns listOf(shareResponse)
-        coEvery { reviewerShareUseCases.revokeReviewerShare("user-1", "share-1") } returns Unit
-        coEvery { reviewerShareUseCases.listReviewerInbox("reviewer-1") } returns listOf(shareResponse)
-        coEvery { reviewerShareUseCases.getReviewerShare("reviewer-1", "share-1") } returns shareEntityResponse
-        coEvery { reviewerShareUseCases.getReviewerShareReviewTemplate("reviewer-1", "share-1") } returns templateResponse
+        coEvery { collaboratorShareUseCases.revokeCollaboratorShare("user-1", "share-1") } returns Unit
+        coEvery { collaboratorShareUseCases.listCollaboratorInbox("collaborator-1") } returns listOf(shareResponse)
+        coEvery { collaboratorShareUseCases.getCollaboratorShare("collaborator-1", "share-1") } returns shareEntityResponse
+        coEvery { collaboratorShareUseCases.getCollaboratorReviewTemplate("collaborator-1", "share-1") } returns templateResponse
         coEvery {
-            reviewerShareUseCases.submitReviewerShareReview("reviewer-1", "share-1", any())
+            collaboratorShareUseCases.submitCollaboratorReview("collaborator-1", "share-1", any())
         } returns reviewResponse
 
         val services = object : ShareServices {
             override val authService = authService
             override val requestIdentityProvider = ExternalIdentityProvider(authService)
             override val shareUseCases: ShareUseCases = mockk(relaxed = true)
-            override val reviewerShareUseCases = reviewerShareUseCases
+            override val collaboratorShareUseCases = collaboratorShareUseCases
         }
 
         environment { config = MapApplicationConfig() }
@@ -141,70 +141,70 @@ class ReviewerShareRoutesTest {
                         this.authService = services.authService
                         this.requestIdentityProvider = services.requestIdentityProvider
                     }
-                    entityReviewerShareRoutes(services)
+                    entityCollaboratorShareRoutes(services)
                 }
-                route("/api/v1/reviewer-shares") {
+                route("/api/v1/collaborator-shares") {
                     install(UserAuthPlugin) {
                         this.authService = services.authService
                         this.requestIdentityProvider = services.requestIdentityProvider
                     }
-                    reviewerShareManagementRoutes(services)
+                    collaboratorShareManagementRoutes(services)
                 }
-                route("/api/v1/reviewer") {
+                route("/api/v1/collaborator") {
                     install(UserAuthPlugin) {
                         this.authService = services.authService
                         this.requestIdentityProvider = services.requestIdentityProvider
                     }
-                    reviewerInboxRoutes(services)
+                    collaboratorInboxRoutes(services)
                 }
             }
         }
 
-        val createResponse = client.post("/api/v1/entities/document/doc-1/reviewer-shares") {
+        val createResponse = client.post("/api/v1/entities/document/doc-1/collaborator-shares") {
             header(HttpHeaders.Authorization, "Bearer owner-token")
             header("X-App-Id", "test-app")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            setBody(json.encodeToString(CreateReviewerShareRequest(reviewerEmail = "mentor@example.com")))
+            setBody(json.encodeToString(CreateCollaboratorShareRequest(collaboratorEmail = "mentor@example.com")))
         }
         assertEquals(HttpStatusCode.Created, createResponse.status)
 
-        val listResponse = client.get("/api/v1/entities/document/doc-1/reviewer-shares") {
+        val listResponse = client.get("/api/v1/entities/document/doc-1/collaborator-shares") {
             header(HttpHeaders.Authorization, "Bearer owner-token")
             header("X-App-Id", "test-app")
         }
         assertEquals(HttpStatusCode.OK, listResponse.status)
 
-        val revokeResponse = client.post("/api/v1/reviewer-shares/share-1/revoke") {
+        val revokeResponse = client.post("/api/v1/collaborator-shares/share-1/revoke") {
             header(HttpHeaders.Authorization, "Bearer owner-token")
             header("X-App-Id", "test-app")
         }
         assertEquals(HttpStatusCode.NoContent, revokeResponse.status)
 
-        val inboxResponse = client.get("/api/v1/reviewer/shares") {
-            header(HttpHeaders.Authorization, "Bearer reviewer-token")
+        val inboxResponse = client.get("/api/v1/collaborator/shares") {
+            header(HttpHeaders.Authorization, "Bearer collaborator-token")
             header("X-App-Id", "test-app")
         }
         assertEquals(HttpStatusCode.OK, inboxResponse.status)
 
-        val detailResponse = client.get("/api/v1/reviewer/shares/share-1") {
-            header(HttpHeaders.Authorization, "Bearer reviewer-token")
+        val detailResponse = client.get("/api/v1/collaborator/shares/share-1") {
+            header(HttpHeaders.Authorization, "Bearer collaborator-token")
             header("X-App-Id", "test-app")
         }
         assertEquals(HttpStatusCode.OK, detailResponse.status)
 
-        val templateResult = client.get("/api/v1/reviewer/shares/share-1/review-template") {
-            header(HttpHeaders.Authorization, "Bearer reviewer-token")
+        val templateResult = client.get("/api/v1/collaborator/shares/share-1/review-template") {
+            header(HttpHeaders.Authorization, "Bearer collaborator-token")
             header("X-App-Id", "test-app")
         }
         assertEquals(HttpStatusCode.OK, templateResult.status)
 
-        val reviewResult = client.post("/api/v1/reviewer/shares/share-1/reviews") {
-            header(HttpHeaders.Authorization, "Bearer reviewer-token")
+        val reviewResult = client.post("/api/v1/collaborator/shares/share-1/reviews") {
+            header(HttpHeaders.Authorization, "Bearer collaborator-token")
             header("X-App-Id", "test-app")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(
                 json.encodeToString(
-                    SubmitReviewerShareReviewRequest(
+                    SubmitCollaboratorReviewRequest(
                         reviewFormId = "document_review_form_v1",
                         reviewFormVersion = 1,
                         answers = listOf(
@@ -217,22 +217,22 @@ class ReviewerShareRoutesTest {
         assertEquals(HttpStatusCode.Created, reviewResult.status)
 
         coVerify(exactly = 1) {
-            reviewerShareUseCases.createReviewerShare(
+            collaboratorShareUseCases.createCollaboratorShare(
                 "user-1",
                 "document",
                 "doc-1",
-                CreateReviewerShareRequest(reviewerEmail = "mentor@example.com"),
+                CreateCollaboratorShareRequest(collaboratorEmail = "mentor@example.com"),
             )
         }
-        coVerify(exactly = 1) { reviewerShareUseCases.revokeReviewerShare("user-1", "share-1") }
-        coVerify(exactly = 1) { reviewerShareUseCases.listReviewerInbox("reviewer-1") }
-        coVerify(exactly = 1) { reviewerShareUseCases.getReviewerShare("reviewer-1", "share-1") }
-        coVerify(exactly = 1) { reviewerShareUseCases.getReviewerShareReviewTemplate("reviewer-1", "share-1") }
+        coVerify(exactly = 1) { collaboratorShareUseCases.revokeCollaboratorShare("user-1", "share-1") }
+        coVerify(exactly = 1) { collaboratorShareUseCases.listCollaboratorInbox("collaborator-1") }
+        coVerify(exactly = 1) { collaboratorShareUseCases.getCollaboratorShare("collaborator-1", "share-1") }
+        coVerify(exactly = 1) { collaboratorShareUseCases.getCollaboratorReviewTemplate("collaborator-1", "share-1") }
         coVerify(exactly = 1) {
-            reviewerShareUseCases.submitReviewerShareReview(
-                "reviewer-1",
+            collaboratorShareUseCases.submitCollaboratorReview(
+                "collaborator-1",
                 "share-1",
-                SubmitReviewerShareReviewRequest(
+                SubmitCollaboratorReviewRequest(
                     reviewFormId = "document_review_form_v1",
                     reviewFormVersion = 1,
                     answers = listOf(ReviewAnswerRequest(fieldId = "summary", textValue = "Looks good")),

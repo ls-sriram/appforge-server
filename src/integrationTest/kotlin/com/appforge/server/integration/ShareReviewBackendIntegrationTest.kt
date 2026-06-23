@@ -4,9 +4,9 @@ import com.appforge.server.api.ProtoTimestamp
 import com.appforge.server.api.reviews.ReviewAnswerRequest
 import com.appforge.server.api.reviews.ReviewResponse
 import com.appforge.server.api.sharing.CreateShareRequest
-import com.appforge.server.api.sharing.CreateReviewerShareRequest
-import com.appforge.server.api.sharing.ReviewerShareEntityResponse
-import com.appforge.server.api.sharing.ReviewerShareResponse
+import com.appforge.server.api.sharing.CreateCollaboratorShareRequest
+import com.appforge.server.api.sharing.CollaboratorShareEntityResponse
+import com.appforge.server.api.sharing.CollaboratorShareResponse
 import com.appforge.server.api.sharing.ShareResponse
 import com.appforge.server.api.sharing.ShareSummaryResponse
 import com.appforge.server.infrastructure.ExposedDatabase
@@ -15,11 +15,11 @@ import com.appforge.server.middleware.configureErrorHandling
 import com.appforge.server.middleware.UserAuthPlugin
 import com.appforge.server.providers.identity.ExternalIdentityProvider
 import com.appforge.server.routing.entityShareCollectionRoutes
-import com.appforge.server.routing.entityReviewerShareRoutes
+import com.appforge.server.routing.entityCollaboratorShareRoutes
 import com.appforge.server.routing.entityShareRoutes
 import com.appforge.server.routing.publicShareRoutes
-import com.appforge.server.routing.reviewerInboxRoutes
-import com.appforge.server.routing.reviewerShareManagementRoutes
+import com.appforge.server.routing.collaboratorInboxRoutes
+import com.appforge.server.routing.collaboratorShareManagementRoutes
 import com.appforge.server.services.auth.AuthService
 import com.appforge.server.services.auth.repository.SqlUserRepository
 import com.appforge.server.services.documents.repository.SqlDocumentRepository
@@ -35,15 +35,15 @@ import com.appforge.server.services.reviews.services.ReviewService
 import com.appforge.server.services.sharing.PublicShareServices
 import com.appforge.server.services.sharing.PublicShareUseCases
 import com.appforge.server.services.sharing.PublicShareUseCasesImpl
-import com.appforge.server.services.sharing.ReviewerShareUseCases
-import com.appforge.server.services.sharing.ReviewerShareUseCasesImpl
+import com.appforge.server.services.sharing.CollaboratorShareUseCases
+import com.appforge.server.services.sharing.CollaboratorShareUseCasesImpl
 import com.appforge.server.services.sharing.ShareServices
 import com.appforge.server.services.sharing.ShareUseCases
 import com.appforge.server.services.sharing.ShareUseCasesImpl
 import com.appforge.server.services.sharing.models.Share
 import com.appforge.server.services.sharing.repository.DocumentEntityDescriptorResolver
 import com.appforge.server.services.sharing.repository.EntityDescriptorResolverRegistry
-import com.appforge.server.services.sharing.repository.ReviewerShareRepository
+import com.appforge.server.services.sharing.repository.CollaboratorShareRepository
 import com.appforge.server.services.sharing.repository.ShareEntityRepository
 import com.appforge.server.services.sharing.repository.ShareRepository
 import com.appforge.server.services.sharing.services.ShareService
@@ -240,12 +240,12 @@ class ShareReviewBackendIntegrationTest {
     }
 
     @Test
-    fun `reviewer share endpoints restrict access to authenticated reviewer and persist review author email`() = testApplication {
+    fun `collaborator share endpoints restrict access to authenticated collaborator and persist review author email`() = testApplication {
         val db = IntegrationDbHarness.createDatabase()
         resetBackendTables(db)
         seedUser(db, uid = "user-1", email = "student@example.com")
-        seedUser(db, uid = "reviewer-1", email = "mentor@example.com")
-        seedUser(db, uid = "reviewer-2", email = "other@example.com")
+        seedUser(db, uid = "collaborator-1", email = "mentor@example.com")
+        seedUser(db, uid = "collaborator-2", email = "other@example.com")
         seedDocument(
             db = db,
             id = "doc-1",
@@ -267,86 +267,86 @@ class ShareReviewBackendIntegrationTest {
                         this.authService = services.authService
                         this.requestIdentityProvider = services.requestIdentityProvider
                     }
-                    entityReviewerShareRoutes(services)
+                    entityCollaboratorShareRoutes(services)
                 }
-                route("/api/v1/reviewer-shares") {
+                route("/api/v1/collaborator-shares") {
                     install(UserAuthPlugin) {
                         this.authService = services.authService
                         this.requestIdentityProvider = services.requestIdentityProvider
                     }
-                    reviewerShareManagementRoutes(services)
+                    collaboratorShareManagementRoutes(services)
                 }
-                route("/api/v1/reviewer") {
+                route("/api/v1/collaborator") {
                     install(UserAuthPlugin) {
                         this.authService = services.authService
                         this.requestIdentityProvider = services.requestIdentityProvider
                     }
-                    reviewerInboxRoutes(services)
+                    collaboratorInboxRoutes(services)
                 }
             }
         }
 
-        val createResponse = client.post("/api/v1/entities/document/doc-1/reviewer-shares") {
+        val createResponse = client.post("/api/v1/entities/document/doc-1/collaborator-shares") {
             header(HttpHeaders.Authorization, "Bearer owner-token")
             header("X-App-Id", "integration-app")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            setBody(json.encodeToString(CreateReviewerShareRequest(reviewerEmail = "mentor@example.com")))
+            setBody(json.encodeToString(CreateCollaboratorShareRequest(collaboratorEmail = "mentor@example.com")))
         }
         assertEquals(HttpStatusCode.Created, createResponse.status)
-        val createdShare = json.decodeFromString<ReviewerShareResponse>(createResponse.body<String>())
+        val createdShare = json.decodeFromString<CollaboratorShareResponse>(createResponse.body<String>())
         assertEquals("active", createdShare.status)
 
-        val ownerListResponse = client.get("/api/v1/entities/document/doc-1/reviewer-shares") {
+        val ownerListResponse = client.get("/api/v1/entities/document/doc-1/collaborator-shares") {
             header(HttpHeaders.Authorization, "Bearer owner-token")
             header("X-App-Id", "integration-app")
         }
         assertEquals(HttpStatusCode.OK, ownerListResponse.status)
-        val ownerShares = json.decodeFromString<List<ReviewerShareResponse>>(ownerListResponse.body<String>())
+        val ownerShares = json.decodeFromString<List<CollaboratorShareResponse>>(ownerListResponse.body<String>())
         assertEquals(listOf(createdShare.id), ownerShares.map { it.id })
 
-        val reviewerInboxResponse = client.get("/api/v1/reviewer/shares") {
-            header(HttpHeaders.Authorization, "Bearer reviewer-token")
+        val collaboratorInboxResponse = client.get("/api/v1/collaborator/shares") {
+            header(HttpHeaders.Authorization, "Bearer collaborator-token")
             header("X-App-Id", "integration-app")
         }
-        assertEquals(HttpStatusCode.OK, reviewerInboxResponse.status)
-        val reviewerShares = json.decodeFromString<List<ReviewerShareResponse>>(reviewerInboxResponse.body<String>())
-        assertEquals(listOf(createdShare.id), reviewerShares.map { it.id })
+        assertEquals(HttpStatusCode.OK, collaboratorInboxResponse.status)
+        val collaboratorShares = json.decodeFromString<List<CollaboratorShareResponse>>(collaboratorInboxResponse.body<String>())
+        assertEquals(listOf(createdShare.id), collaboratorShares.map { it.id })
 
-        val otherReviewerInboxResponse = client.get("/api/v1/reviewer/shares") {
-            header(HttpHeaders.Authorization, "Bearer other-reviewer-token")
+        val otherCollaboratorInboxResponse = client.get("/api/v1/collaborator/shares") {
+            header(HttpHeaders.Authorization, "Bearer other-collaborator-token")
             header("X-App-Id", "integration-app")
         }
-        assertEquals(HttpStatusCode.OK, otherReviewerInboxResponse.status)
-        val otherReviewerShares = json.decodeFromString<List<ReviewerShareResponse>>(otherReviewerInboxResponse.body<String>())
-        assertTrue(otherReviewerShares.isEmpty())
+        assertEquals(HttpStatusCode.OK, otherCollaboratorInboxResponse.status)
+        val otherCollaboratorShares = json.decodeFromString<List<CollaboratorShareResponse>>(otherCollaboratorInboxResponse.body<String>())
+        assertTrue(otherCollaboratorShares.isEmpty())
 
-        val detailResponse = client.get("/api/v1/reviewer/shares/${createdShare.id}") {
-            header(HttpHeaders.Authorization, "Bearer reviewer-token")
+        val detailResponse = client.get("/api/v1/collaborator/shares/${createdShare.id}") {
+            header(HttpHeaders.Authorization, "Bearer collaborator-token")
             header("X-App-Id", "integration-app")
         }
         assertEquals(HttpStatusCode.OK, detailResponse.status)
-        val detail = json.decodeFromString<ReviewerShareEntityResponse>(detailResponse.body<String>())
+        val detail = json.decodeFromString<CollaboratorShareEntityResponse>(detailResponse.body<String>())
         assertEquals("Reviewer share content", detail.entity.content)
 
-        val forbiddenDetailResponse = client.get("/api/v1/reviewer/shares/${createdShare.id}") {
-            header(HttpHeaders.Authorization, "Bearer other-reviewer-token")
+        val forbiddenDetailResponse = client.get("/api/v1/collaborator/shares/${createdShare.id}") {
+            header(HttpHeaders.Authorization, "Bearer other-collaborator-token")
             header("X-App-Id", "integration-app")
         }
         assertEquals(HttpStatusCode.Gone, forbiddenDetailResponse.status)
 
-        val reviewTemplateResponse = client.get("/api/v1/reviewer/shares/${createdShare.id}/review-template") {
-            header(HttpHeaders.Authorization, "Bearer reviewer-token")
+        val reviewTemplateResponse = client.get("/api/v1/collaborator/shares/${createdShare.id}/review-template") {
+            header(HttpHeaders.Authorization, "Bearer collaborator-token")
             header("X-App-Id", "integration-app")
         }
         assertEquals(HttpStatusCode.OK, reviewTemplateResponse.status)
 
-        val submitResponse = client.post("/api/v1/reviewer/shares/${createdShare.id}/reviews") {
-            header(HttpHeaders.Authorization, "Bearer reviewer-token")
+        val submitResponse = client.post("/api/v1/collaborator/shares/${createdShare.id}/reviews") {
+            header(HttpHeaders.Authorization, "Bearer collaborator-token")
             header("X-App-Id", "integration-app")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(
                 json.encodeToString(
-                    SubmitReviewerShareReviewPayload(
+                    SubmitCollaboratorReviewPayload(
                         reviewFormId = "document_review_form_v1",
                         reviewFormVersion = 1,
                         answers = listOf(
@@ -365,14 +365,14 @@ class ShareReviewBackendIntegrationTest {
         assertEquals("mentor@example.com", storedReview.authorEmail)
         assertEquals(JsonPrimitive("Mentor feedback."), storedReview.content["summary"])
 
-        val revokeResponse = client.post("/api/v1/reviewer-shares/${createdShare.id}/revoke") {
+        val revokeResponse = client.post("/api/v1/collaborator-shares/${createdShare.id}/revoke") {
             header(HttpHeaders.Authorization, "Bearer owner-token")
             header("X-App-Id", "integration-app")
         }
         assertEquals(HttpStatusCode.NoContent, revokeResponse.status)
 
-        val revokedDetailResponse = client.get("/api/v1/reviewer/shares/${createdShare.id}") {
-            header(HttpHeaders.Authorization, "Bearer reviewer-token")
+        val revokedDetailResponse = client.get("/api/v1/collaborator/shares/${createdShare.id}") {
+            header(HttpHeaders.Authorization, "Bearer collaborator-token")
             header("X-App-Id", "integration-app")
         }
         assertEquals(HttpStatusCode.Gone, revokedDetailResponse.status)
@@ -381,7 +381,7 @@ class ShareReviewBackendIntegrationTest {
     private fun buildShareServices(db: ExposedDatabase): ShareServices {
         val authService = mockAuthService()
         val shareRepository = ShareRepository(db)
-        val reviewerShareRepository = ReviewerShareRepository(db)
+        val collaboratorShareRepository = CollaboratorShareRepository(db)
         val shareService = ShareService(shareRepository)
         val shareUseCases: ShareUseCases = ShareUseCasesImpl(
             shareService = shareService,
@@ -402,8 +402,8 @@ class ShareReviewBackendIntegrationTest {
                 mapOf("document" to DocumentTextContentResolver(documentRepository))
             ),
         )
-        val reviewerShareUseCases: ReviewerShareUseCases = ReviewerShareUseCasesImpl(
-            reviewerShareRepository = reviewerShareRepository,
+        val collaboratorShareUseCases: CollaboratorShareUseCases = CollaboratorShareUseCasesImpl(
+            collaboratorShareRepository = collaboratorShareRepository,
             userRepository = SqlUserRepository(db),
             authService = authService,
             emailService = mockk<EmailService>(relaxed = true),
@@ -424,7 +424,7 @@ class ShareReviewBackendIntegrationTest {
             override val authService: AuthService = authService
             override val requestIdentityProvider = ExternalIdentityProvider(authService)
             override val shareUseCases: ShareUseCases = shareUseCases
-            override val reviewerShareUseCases: ReviewerShareUseCases = reviewerShareUseCases
+            override val collaboratorShareUseCases: CollaboratorShareUseCases = collaboratorShareUseCases
         }
     }
 
@@ -467,20 +467,20 @@ class ShareReviewBackendIntegrationTest {
     private fun mockAuthService(): AuthService {
         val authService = mockk<AuthService>()
         val ownerToken = mockk<FirebaseToken>()
-        val reviewerToken = mockk<FirebaseToken>()
-        val otherReviewerToken = mockk<FirebaseToken>()
+        val collaboratorToken = mockk<FirebaseToken>()
+        val otherCollaboratorToken = mockk<FirebaseToken>()
         every { ownerToken.uid } returns "user-1"
-        every { reviewerToken.uid } returns "reviewer-1"
-        every { otherReviewerToken.uid } returns "reviewer-2"
+        every { collaboratorToken.uid } returns "collaborator-1"
+        every { otherCollaboratorToken.uid } returns "collaborator-2"
         every { authService.verifyIdToken("good-token") } returns ownerToken
         every { authService.verifyIdToken("owner-token") } returns ownerToken
-        every { authService.verifyIdToken("reviewer-token") } returns reviewerToken
-        every { authService.verifyIdToken("other-reviewer-token") } returns otherReviewerToken
+        every { authService.verifyIdToken("collaborator-token") } returns collaboratorToken
+        every { authService.verifyIdToken("other-collaborator-token") } returns otherCollaboratorToken
         every { authService.verifySessionCookie(any()) } returns null
         every { authService.sessionCookieName } returns "session"
         every { authService.internalSecret } returns "internal-secret"
-        every { authService.getUserEmail("reviewer-1") } returns "mentor@example.com"
-        every { authService.getUserEmail("reviewer-2") } returns "other@example.com"
+        every { authService.getUserEmail("collaborator-1") } returns "mentor@example.com"
+        every { authService.getUserEmail("collaborator-2") } returns "other@example.com"
         return authService
     }
 
@@ -552,7 +552,7 @@ class ShareReviewBackendIntegrationTest {
         db.withConnection { conn ->
             conn.prepareStatement(
                 """
-                TRUNCATE TABLE reviews, reviewer_entity_shares, entity_shares, documents, form_field_options, form_fields, forms, profiles, app_users
+                TRUNCATE TABLE reviews, collaborator_entity_shares, entity_shares, documents, form_field_options, form_fields, forms, profiles, app_users
                 RESTART IDENTITY CASCADE
                 """.trimIndent()
             ).use { it.executeUpdate() }
@@ -616,7 +616,7 @@ class ShareReviewBackendIntegrationTest {
     )
 
     @Serializable
-    private data class SubmitReviewerShareReviewPayload(
+    private data class SubmitCollaboratorReviewPayload(
         val reviewFormId: String,
         val reviewFormVersion: Int,
         val answers: List<ReviewAnswerRequest>,

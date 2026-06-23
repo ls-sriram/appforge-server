@@ -5,16 +5,16 @@ import com.appforge.server.api.reviews.ReviewAnswerRequest
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class CreateReviewerShareRequest(
-    val reviewerEmail: String,
+data class CreateCollaboratorShareRequest(
+    val collaboratorEmail: String,
 )
 
 @Serializable
-data class ReviewerShareResponse(
+data class CollaboratorShareResponse(
     val id: String,
     val entityType: String,
     val entityId: String,
-    val reviewerEmail: String,
+    val collaboratorEmail: String,
     val status: String,
     val createdAt: ProtoTimestamp,
     val expiresAt: ProtoTimestamp? = null,
@@ -25,13 +25,13 @@ data class ReviewerShareResponse(
 )
 
 @Serializable
-data class ReviewerShareEntityResponse(
-    val share: ReviewerShareResponse,
+data class CollaboratorShareEntityResponse(
+    val share: CollaboratorShareResponse,
     val entity: PublicEntity,
 )
 
 @Serializable
-data class SubmitReviewerShareReviewRequest(
+data class SubmitCollaboratorReviewRequest(
     val reviewFormId: String,
     val reviewFormVersion: Int,
     val answers: List<ReviewAnswerRequest> = emptyList(),

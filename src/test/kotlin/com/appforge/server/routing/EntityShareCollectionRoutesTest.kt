@@ -6,7 +6,7 @@ import com.appforge.server.middleware.UserAuthPlugin
 import com.appforge.server.middleware.configureErrorHandling
 import com.appforge.server.providers.identity.ExternalIdentityProvider
 import com.appforge.server.services.auth.AuthService
-import com.appforge.server.services.sharing.ReviewerShareUseCases
+import com.appforge.server.services.sharing.CollaboratorShareUseCases
 import com.appforge.server.services.sharing.ShareServices
 import com.appforge.server.services.sharing.ShareUseCases
 import com.google.firebase.auth.FirebaseToken
@@ -87,7 +87,7 @@ class EntityShareCollectionRoutesTest {
             override val authService = authService
             override val requestIdentityProvider = ExternalIdentityProvider(authService)
             override val shareUseCases = shareUseCases
-            override val reviewerShareUseCases: ReviewerShareUseCases = mockk(relaxed = true)
+            override val collaboratorShareUseCases: CollaboratorShareUseCases = mockk(relaxed = true)
         }
     }
 }

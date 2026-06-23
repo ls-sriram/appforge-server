@@ -21,6 +21,9 @@ import com.appforge.server.routing.taskRoutes
 import com.appforge.server.routing.entityReviewRoutes
 import com.appforge.server.routing.entityShareRoutes
 import com.appforge.server.routing.entityShareCollectionRoutes
+import com.appforge.server.routing.entityCollaboratorShareRoutes
+import com.appforge.server.routing.collaboratorShareManagementRoutes
+import com.appforge.server.routing.collaboratorInboxRoutes
 
 class RoutesModule(
     private val servicesModule: ServicesModule,
@@ -50,7 +53,7 @@ class RoutesModule(
                 }
                 entityReviewRoutes(servicesModule.reviewServices())
                 entityShareRoutes(servicesModule.shareServices())
-                entityReviewerShareRoutes(servicesModule.shareServices())
+                entityCollaboratorShareRoutes(servicesModule.shareServices())
             }
 
             route("/api/v1/entities") {
@@ -61,20 +64,20 @@ class RoutesModule(
                 entityShareCollectionRoutes(servicesModule.shareServices())
             }
 
-            route("/api/v1/reviewer-shares") {
+            route("/api/v1/collaborator-shares") {
                 install(UserAuthPlugin) {
                     this.authService = servicesModule.shareServices().authService
                     this.requestIdentityProvider = servicesModule.shareServices().requestIdentityProvider
                 }
-                reviewerShareManagementRoutes(servicesModule.shareServices())
+                collaboratorShareManagementRoutes(servicesModule.shareServices())
             }
 
-            route("/api/v1/reviewer") {
+            route("/api/v1/collaborator") {
                 install(UserAuthPlugin) {
                     this.authService = servicesModule.shareServices().authService
                     this.requestIdentityProvider = servicesModule.shareServices().requestIdentityProvider
                 }
-                reviewerInboxRoutes(servicesModule.shareServices())
+                collaboratorInboxRoutes(servicesModule.shareServices())
             }
 
             // ─── Extension routes ────────────────────────────────────────
